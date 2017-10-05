@@ -1,0 +1,7 @@
+nbproject/
+.vscode/
+.idea/
+web/instance/flask.cfg
+web/project/data/*
+!web/project/data/.gitkeep
+/nbproject

@@ -1,0 +1,29 @@
+version: '2'
+services:
+  web:
+    restart: always
+    build: ./web
+    ports:
+      - "8095:8000"
+    volumes:
+      - ./web/project/data:/home/flask/app/web/data
+    command: /usr/local/bin/gunicorn -w 2 -b :8000 project:app
+    environment:
+      PYTHONUNBUFFERED: 0
+    depends_on:
+      - apiallspeakeudb
+
+  apiallspeakeudb:
+    image: postgres:9.6-alpine
+    restart: always
+    volumes:
+      - apiallspeakeupgdata:/var/lib/postgresql/data
+    ports:
+      - "5439:5432"
+    environment:
+      POSTGRES_DB: apiallspeakeu
+      POSTGRES_USER: apiallspeakeu
+      POSTGRES_PASSWORD: apiallspeakeu
+
+volumes:
+  apiallspeakeupgdata:
