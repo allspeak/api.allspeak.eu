@@ -14,6 +14,7 @@ from flask_pagedown import PageDown
 from flask_migrate import Migrate
 from flask_httpauth import HTTPBasicAuth
 import requests
+from .exceptions import RequestException
 
 
 ################
@@ -54,12 +55,15 @@ configure_uploads(app, images)
 #### custom error pages ####
 ############################
 
+@app.errorhandler(RequestException)
+def exception(e):
+    print(str(e))
+    return make_response(jsonify({'error': str(e)}), 400)
 
 @app.errorhandler(Exception)
 def exception(e):
     print(str(e))
     return make_response(jsonify({'error': str(e)}), 500)
-
 
 @app.errorhandler(400)
 def request_error(e):
