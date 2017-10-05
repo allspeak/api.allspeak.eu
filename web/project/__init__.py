@@ -14,6 +14,7 @@ from flask_pagedown import PageDown
 from flask_migrate import Migrate
 from flask_httpauth import HTTPBasicAuth
 import requests
+import traceback
 from .exceptions import RequestException
 
 
@@ -68,6 +69,7 @@ def exception(e):
 @app.errorhandler(Exception)
 def exception(e):
     print(str(e))
+    traceback.print_exc()
     return make_response(jsonify({'error': str(e)}), 500)
 
 @app.errorhandler(400)
