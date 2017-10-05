@@ -51,6 +51,11 @@ configure_uploads(app, images)
 #### blueprints ####
 ####################
 
+from project.training_api.views import training_api_blueprint
+
+# register the blueprints
+app.register_blueprint(training_api_blueprint)
+
 ############################
 #### custom error pages ####
 ############################
