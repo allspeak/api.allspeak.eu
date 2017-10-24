@@ -1,0 +1,9 @@
+{"nInputParams":792,
+"nContextFrames":5,
+"sModelFileName":"user",
+"sInputNodeName":"inputs/I",
+"sOutputNodeName":"SMO",
+"batch_size":100,
+"hm_epochs":20,
+"ftnet_vars_name":"model"
+}

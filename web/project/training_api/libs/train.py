@@ -582,9 +582,9 @@ def train_net(training_sessionid, user_id, modeltype, commands_ids, str_proc_sch
     Path(lockfile_path).touch()
 
     if modeltype == 274:
-        trainparams_json = 'data/train_params.json'
+        trainparams_json = 'training_api/train_params.json'
     else:
-        trainparams_json = 'data/ft_train_params.json'
+        trainparams_json = 'training_api/ft_train_params.json'
     
     with open(trainparams_json, 'r') as data_file:
         train_data = json.load(data_file)
