@@ -58,9 +58,9 @@ def add_training_session(user_id):
     with open(dest_json_filename, 'r') as data_file:
         train_data = json.load(data_file)
 
-    modeltype = train_data['nModelType']    # newnet or ft_initnet
-    vocabulary = train_data['vocabulary']     # list of commands id [1102, 1103, 1206, ...]
-    commands_ids = [cmd['id'] for cmd in vocabulary]
+    modeltype = train_data['nModelType']                    # newnet or ft_initnet
+    commands = train_data['commands']                       # list of commands id [1102, 1103, 1206, ...]
+    commands_ids = [cmd['id'] for cmd in commands]
     str_proc_scheme = str(train_data['nProcessingScheme'])  # 252/253/254/255
 
     executor = ThreadPoolExecutor(2)
@@ -92,7 +92,7 @@ def get_training_session(user_id, session_id):
     with open(trainparams_json, 'r') as data_file:
         train_data = json.load(data_file)
 
-    nitems = len(session_data['vocabulary'])
+    nitems = len(session_data['commands'])
 
     output_net_name = "optimized_%s_%d_%d.pb" % (train_data['sModelFileName'], user_id, session_data['nProcessingScheme'])
 
@@ -106,13 +106,9 @@ def get_training_session(user_id, session_id):
             'sModelFilePath':output_net_name,
             'sInputNodeName':train_data['sInputNodeName'],
             'sOutputNodeName':train_data['sOutputNodeName'],            
+            'sLocalFolder':session_data['sLocalFolder'],
             'nProcessingScheme':session_data['nProcessingScheme'],
-            'sCreation':nw.strftime('%Y/%m/%d %H:%M:%S'),
-            'vocabulary':session_data['vocabulary']
+            'sCreationTime':nw.strftime('%Y/%m/%d %H:%M:%S'),
+            'commands':session_data['commands']
             }
     return jsonify(res)
-
-
-
-
-
