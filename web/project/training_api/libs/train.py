@@ -14,11 +14,14 @@ import glob
 import os
 import time
 import shutil
+import zipfile
+import json
 from numpy import genfromtxt
 from . import freeze
 from . import models
 from . import utilities
 from . import context
+from pathlib import Path
 
 
 # ===========================================================================================================================
@@ -184,13 +187,14 @@ def trainExistingSubjects(subjects_list, output_model_name, train_data_input_mat
 def createSubjectTrainingMatrix(subj, in_orig_subj_path, output_net_path, arr_commands, arr_rip):
     mat_compl = []
     mat_lab = []
-    output_matrices_path = output_net_path + '/matrices'
+    output_matrices_path = in_orig_subj_path + '/matrices'
 
     if os.path.isdir(output_matrices_path) is False:
         os.mkdir(output_matrices_path)
+    print(output_matrices_path)
 
     for ctxfile in glob.glob(in_orig_subj_path + '/ctx*'):
-
+        print(ctxfile)
         spl = re.split('[_ .]', ctxfile)  # e.g. ctx_SUBJ_CMD_REP => spl2[2] num comando, spl[3] num ripetiz
         id_cmd = int(spl[2])
         id_rep = int(spl[3])
@@ -211,7 +215,8 @@ def createSubjectTrainingMatrix(subj, in_orig_subj_path, output_net_path, arr_co
             else:
                 mat_compl = np.vstack((mat_compl, ctx))
                 mat_lab = np.vstack((mat_lab, lb))
-
+debug = false
+    printdebug(mat_compl.size)
     # print data
     np.savetxt(output_matrices_path + '/' + subj + '_train_data.dat', mat_compl, fmt='%.4f')
     np.savetxt(output_matrices_path + '/' + subj + '_train_labels.dat', mat_lab, fmt='%.0f')
@@ -549,6 +554,38 @@ def fineTuningFolderOnlyTrain(inputdata_folder, commands_list, input_model_path,
             if clean_folder is True:
                 shutil.rmtree(output_net_path + "/matrices")  # /matrices is defined in createSubjectMatrix
 
-def train_net(folder_path, ctx_frames, commands_ids, inputnet_path, output_net_path, output_net_name, clean_folder, hm_epochs, batch_size, ftnet_vars_name):
+def train_net(training_sessionid, user_id):
+    folder_path = os.path.join('data', str(training_sessionid))
+
+    lockfile_path = os.path.join(folder_path, '.lock')
+    Path(lockfile_path).touch()
+
+    file_path = os.path.join(folder_path, 'data.zip')
+    
+    with zipfile.ZipFile(file_path, "r") as zip_ref:
+        zip_ref.extractall(folder_path)
+
+    json_filename = os.path.join(folder_path, 'training.json')
+
+    with open(json_filename, 'r') as data_file:
+        train_data = json.load(data_file)
+
+    ctx_frames = train_data['nContextFrames']    # num contexting frames
+    vocabulary = train_data['vocabulary']     # list of commands id [1102, 1103, 1206, ...]
+    commands_ids = [cmd['id'] for cmd in vocabulary]
+
+    inputnet_path = 'project/inputnet/optimized_allcontrols_fsc.pb'
+    output_net_name = "user_%d_FT_net_fsc" % user_id
+    output_net_path = os.path.join(folder_path, 'net')
+
+    # model params
+    ftnet_vars_name = "fine_tuning_weights"
+    batch_size = 100
+    hm_epochs = 20       # NUMBER OF CYCLES: feed forward + backpropagation
+    clean_folder = True
+    # CONTEXTING DATA (create ctx_...  files)
     context.createSubjectContext(folder_path, ctx_frames)
+    print('context created')
     fineTuningFolderOnlyTrain(folder_path, commands_ids, inputnet_path, output_net_path, output_net_name, clean_folder, hm_epochs, batch_size, ftnet_vars_name)
+    print('tuning done')
+    os.remove(lockfile_path)

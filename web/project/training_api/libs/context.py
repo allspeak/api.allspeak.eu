@@ -93,6 +93,6 @@ def createSubjectContext(subject_path, ctx_frames):
         if f.endswith(".dat") and not f.startswith("ctx"):
             original_file_path = subject_path + "/" + f
             ctx_file_path = subject_path + "/" + 'ctx_' + f
-            print(f)
+            #print(f)
             create_context_file(original_file_path, ctx_file_path, ctx_frames)
-    print("done")
+    print("subject context created")
