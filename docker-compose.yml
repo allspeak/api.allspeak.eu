@@ -6,12 +6,13 @@ services:
     ports:
       - "8095:8000"
     volumes:
-      - ./web/project/data:/home/flask/app/web/data
-    command: /usr/local/bin/gunicorn -w 2 -b :8000 project:app
+      - ./web:/home/flask/app/web
+    command: /usr/local/bin/gunicorn --reload -w 2 -b :8000 project:app
     environment:
       PYTHONUNBUFFERED: 0
     depends_on:
       - apiallspeakeudb
+    working_dir: /home/flask/app/web
 
   apiallspeakeudb:
     image: postgres:9.6-alpine
