@@ -215,9 +215,6 @@ def createSubjectTrainingMatrix(subj, in_orig_subj_path, output_net_path, arr_co
             else:
                 mat_compl = np.vstack((mat_compl, ctx))
                 mat_lab = np.vstack((mat_lab, lb))
-debug = false
-    printdebug(mat_compl.size)
-    # print data
     np.savetxt(output_matrices_path + '/' + subj + '_train_data.dat', mat_compl, fmt='%.4f')
     np.savetxt(output_matrices_path + '/' + subj + '_train_labels.dat', mat_lab, fmt='%.0f')
     return {'matrices_path': output_matrices_path, 'mat_compl': mat_compl, 'mat_lab': mat_lab}
