@@ -103,7 +103,7 @@ def get_training_session(user_id, session_id):
             'nInputParams':train_data['nInputParams'],
             'nContextFrames':train_data['nContextFrames'],
             'nItemsToRecognize':nitems,
-            'sModelFilePath':output_net_name,
+            'sModelFileName':output_net_name,
             'sInputNodeName':train_data['sInputNodeName'],
             'sOutputNodeName':train_data['sOutputNodeName'],            
             'sLocalFolder':session_data['sLocalFolder'],
