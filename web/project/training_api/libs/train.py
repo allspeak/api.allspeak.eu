@@ -568,8 +568,8 @@ def train_net(training_sessionid, user_id):
         train_data = json.load(data_file)
 
     ctx_frames = train_data['nContextFrames']    # num contexting frames
-    vocabulary = train_data['vocabulary']     # list of commands id [1102, 1103, 1206, ...]
-    commands_ids = [cmd['id'] for cmd in vocabulary]
+    commands = train_data['commands']     # list of commands id [1102, 1103, 1206, ...]
+    commands_ids = [cmd['id'] for cmd in commands]
 
     inputnet_path = 'project/inputnet/optimized_allcontrols_fsc.pb'
     output_net_name = "user_%d_FT_net_fsc" % user_id
