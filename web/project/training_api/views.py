@@ -114,5 +114,16 @@ def get_training_session(user_id, session_id):
 
 
 
-
-
+@training_api_blueprint.route('/users/<int:user_id>/training-sessions/<session_id>/network', methods=['GET'])
+def get_training_session_network(user_id, session_id):
+    try:
+        filename = "user_%d_FT_net_fsc" % user_id
+        filepath = os.path.join('data', str(session_id), 'net', filename)
+        if (os.path.isfile(filepath)):
+            attachment_filename = session_id
+            return send_file(filepath, attachment_filename=attachment_filename)
+        else:
+            abort(404)
+    except Exception as e:
+        print(str(e))
+        abort(500)
