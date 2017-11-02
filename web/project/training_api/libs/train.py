@@ -187,20 +187,18 @@ def trainExistingSubjects(subjects_list, output_model_name, train_data_input_mat
 def createSubjectTrainingMatrix(subj, in_orig_subj_path, output_net_path, arr_commands, arr_rip):
     mat_compl = []
     mat_lab = []
-    output_matrices_path = in_orig_subj_path + '/matrices'
+    output_matrices_path = os.path.join(in_orig_subj_path, 'matrices')
 
     if os.path.isdir(output_matrices_path) is False:
         os.mkdir(output_matrices_path)
-    print(output_matrices_path)
 
     for ctxfile in glob.glob(in_orig_subj_path + '/ctx*'):
-        print(ctxfile)
+        #print(ctxfile)
         spl = re.split('[_ .]', ctxfile)  # e.g. ctx_SUBJ_CMD_REP => spl2[2] num comando, spl[3] num ripetiz
         id_cmd = int(spl[2])
         id_rep = int(spl[3])
 
         if id_cmd in arr_commands and id_rep in arr_rip:
-
             f = open(ctxfile, 'r')
             lines = f.readlines()
             count_lines = len(lines)
@@ -215,11 +213,13 @@ def createSubjectTrainingMatrix(subj, in_orig_subj_path, output_net_path, arr_co
             else:
                 mat_compl = np.vstack((mat_compl, ctx))
                 mat_lab = np.vstack((mat_lab, lb))
-debug = false
-    printdebug(mat_compl.size)
+
     # print data
     np.savetxt(output_matrices_path + '/' + subj + '_train_data.dat', mat_compl, fmt='%.4f')
     np.savetxt(output_matrices_path + '/' + subj + '_train_labels.dat', mat_lab, fmt='%.0f')
+
+    print("createSubjectTrainingMatrix ended: "  + str(mat_compl.size))
+
     return {'matrices_path': output_matrices_path, 'mat_compl': mat_compl, 'mat_lab': mat_lab}
 
 # ===========================================================================================================================
@@ -503,9 +503,18 @@ def fineTuning(subj, commands_list, input_model_name, training_repetitions_list,
 # : inputdata_folder. folder containing ctx_xxxxxx.dat files
 # : output_net_path. where to save the FT NET
 # : output_net_name. name of the output pb file
-def fineTuningFolderOnlyTrain(inputdata_folder, commands_list, input_model_path, output_net_path, output_net_name, clean_folder=True, hm_epochs=20, batch_size=100, ftnet_vars_name="fine_tuning_weights"):
+#def fineTuningFolderOnlyTrain(inputdata_folder, commands_list, input_model_path, output_net_path, output_net_name, clean_folder=True, hm_epochs=20, batch_size=100, ftnet_vars_name="fine_tuning_weights"):
+def fineTuningFolderOnlyTrain(inputdata_folder, commands_list, output_net_path, output_net_name, train_data, clean_folder=True):
 
-    output_ftmodel_path = output_net_path + "/optimized_" + output_net_name + ".pb"
+    batch_size = train_data['batch_size']           # 
+    hm_epochs = train_data['hm_epochs']             # 
+    ftnet_vars_name = train_data['ftnet_vars_name'] # fine_tuning_weights
+    sInputNodeName = train_data['sInputNodeName']   # inputs/I unused
+    sOutputNodeName = train_data['sOutputNodeName'] # 
+    init_net_path = train_data['init_net_path']     #
+
+    session_dir = os.path.dirname(inputdata_folder)
+    output_ftmodel_path = session_dir + "/optimized_" + output_net_name + ".pb"
     ncommands = len(commands_list)
 
     if os.path.isdir(output_net_path) is False:
@@ -524,7 +533,8 @@ def fineTuningFolderOnlyTrain(inputdata_folder, commands_list, input_model_path,
     Nexe = train_data_matrix.shape[0]
     ninputdata_len = len(train_data_matrix[0])
 
-    graph = freeze.load(input_model_path)
+
+    graph = freeze.load(init_net_path)
 
     with tf.Session(graph=graph) as sess:
         with tf.name_scope("inputs"):
@@ -549,43 +559,54 @@ def fineTuningFolderOnlyTrain(inputdata_folder, commands_list, input_model_path,
             print("elapsed time : " + str(elapsed_time))
 
         with tf.device('/cpu:0'):
-            result = freeze.freeze(output_net_name, output_net_path, "SMO")
+            result = freeze.freeze(output_net_name, output_net_path, sOutputNodeName)
             output_optimized_graph_name = result['grp_opt_name']
+
+            print(output_optimized_graph_name + "," + output_ftmodel_path)
+            os.rename(output_optimized_graph_name, output_ftmodel_path)
             if clean_folder is True:
-                shutil.rmtree(output_net_path + "/matrices")  # /matrices is defined in createSubjectMatrix
+                shutil.rmtree(inputdata_folder)  # /matrices is defined in createSubjectMatrix
 
-def train_net(training_sessionid, user_id):
-    folder_path = os.path.join('data', str(training_sessionid))
 
+def train_net(training_sessionid, user_id, modeltype, commands_ids, str_proc_scheme, clean_folder=True):
+
+    #print(str(training_sessionid) + " " + str(user_id) + " " + str(modeltype) + " " + str_proc_scheme + " " + str(len(commands_ids)) + " ")
+    folder_path = os.path.join('project', 'data', str(training_sessionid))
     lockfile_path = os.path.join(folder_path, '.lock')
     Path(lockfile_path).touch()
 
-    file_path = os.path.join(folder_path, 'data.zip')
+
+    if modeltype == 274:
+        trainparams_json = os.path.join('project', 'training_api', 'train_params.json')    
+    else:
+        trainparams_json = os.path.join('project', 'training_api', 'ft_train_params.json')
     
-    with zipfile.ZipFile(file_path, "r") as zip_ref:
-        zip_ref.extractall(folder_path)
+    print(os.getcwd())
+    #a = os.path.join('project', 'training_api', 'train_params.json')
+    print(trainparams_json)
+    
+    #os.path.join('project', 'training_api', 'train_params.json')
 
-    json_filename = os.path.join(folder_path, 'training.json')
 
-    with open(json_filename, 'r') as data_file:
+    with open(trainparams_json, 'r') as data_file:
         train_data = json.load(data_file)
 
-    ctx_frames = train_data['nContextFrames']    # num contexting frames
-    commands = train_data['commands']     # list of commands id [1102, 1103, 1206, ...]
-    commands_ids = [cmd['id'] for cmd in commands]
+    print(train_data['nContextFrames'])
+    ctx_frames = train_data['nContextFrames']           # 
+    sModelFileName = train_data['sModelFileName']   # 
 
-    inputnet_path = 'project/inputnet/optimized_allcontrols_fsc.pb'
-    output_net_name = "user_%d_FT_net_fsc" % user_id
-    output_net_path = os.path.join(folder_path, 'net')
+    output_net_name = "%s_%d_%s" % (sModelFileName, user_id, str_proc_scheme)
+    output_net_path = os.path.join(folder_path, 'data', 'net')
+    data_path = os.path.join(folder_path, 'data')
 
-    # model params
-    ftnet_vars_name = "fine_tuning_weights"
-    batch_size = 100
-    hm_epochs = 20       # NUMBER OF CYCLES: feed forward + backpropagation
-    clean_folder = True
+
     # CONTEXTING DATA (create ctx_...  files)
-    context.createSubjectContext(folder_path, ctx_frames)
-    print('context created')
-    fineTuningFolderOnlyTrain(folder_path, commands_ids, inputnet_path, output_net_path, output_net_name, clean_folder, hm_epochs, batch_size, ftnet_vars_name)
+    context.createSubjectContext(data_path, ctx_frames)
+
+    if modeltype == 274:
+        fineTuningFolderOnlyTrain(data_path, commands_ids, output_net_path, output_net_name, train_data, clean_folder)
+    else:
+        fineTuningFolderOnlyTrain(data_path, commands_ids, output_net_path, output_net_name, train_data, clean_folder)
+
     print('tuning done')
     os.remove(lockfile_path)

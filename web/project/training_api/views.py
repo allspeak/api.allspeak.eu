@@ -11,6 +11,7 @@ from datetime import datetime
  
 training_api_blueprint = Blueprint('training_api', __name__)
 
+# the root path is : /home/flask/app/web
 
 # I create          data/training_sessionid/data/matrices
 # I copy zip to     data/training_sessionid/data.zip
@@ -33,7 +34,7 @@ def add_training_session(user_id):
     print(training_sessionid)
 
     # check & prepare file system
-    session_path = os.path.join('data', str(training_sessionid))
+    session_path = os.path.join('project', 'data', str(training_sessionid))
     if os.path.exists(session_path): 
         msg = 'ERROR: training session %d already exist' % training_sessionid
         raise Exception(msg)
@@ -64,8 +65,7 @@ def add_training_session(user_id):
     str_proc_scheme = str(train_data['nProcessingScheme'])  # 252/253/254/255
 
     executor = ThreadPoolExecutor(2)
-    executor.submit(train.train_net, training_sessionid, user_id, modeltype, commands_ids, str_proc_scheme)
-
+    executor.submit(train.train_net, training_sessionid, user_id, modeltype, commands_ids, str_proc_scheme, True)
     return jsonify({'training_session_id': training_sessionid})
 
 @training_api_blueprint.route('/users/<int:user_id>/training-sessions/<session_id>', methods=['GET'])
@@ -85,9 +85,9 @@ def get_training_session(user_id, session_id):
 
     modeltype = session_data['nModelType']
     if modeltype == 274:
-        trainparams_json = 'training_api/train_params.json'
+        trainparams_json = os.path.join('project', 'training_api', 'train_params.json')    
     else:
-        trainparams_json = 'training_api/ft_train_params.json'
+        trainparams_json = os.path.join('project', 'training_api', 'ft_train_params.json')
     
     with open(trainparams_json, 'r') as data_file:
         train_data = json.load(data_file)
