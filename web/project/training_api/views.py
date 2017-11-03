@@ -93,7 +93,7 @@ def get_training_session(user_id, session_id):
     if modeltype == 274:
         trainparams_json = os.path.join(
             'project', 'training_api', 'train_params.json')
-    else:
+    else: 
         trainparams_json = os.path.join(
             'project', 'training_api', 'ft_train_params.json')
 
@@ -105,23 +105,27 @@ def get_training_session(user_id, session_id):
     output_net_name = "optimized_%s_%d_%d.pb" % (
         train_data['sModelFileName'], user_id, session_data['nProcessingScheme'])
 
-    # create return JSON
+    # create return JSON  
     nw = datetime.now()
-    res = {'status': 'complete',
-           'nModelType': session_data['nModelType'],
-           'nInputParams': train_data['nInputParams'],
-           'nContextFrames': train_data['nContextFrames'],
-           'nItemsToRecognize': nitems,
-           'sModelFileName': output_net_name,
-           'sInputNodeName': train_data['sInputNodeName'],
-           'sOutputNodeName': train_data['sOutputNodeName'],
-           'sLocalFolder': session_data['sLocalFolder'],
-           'nProcessingScheme': session_data['nProcessingScheme'],
-           'sCreationTime': nw.strftime('%Y/%m/%d %H:%M:%S'),
-           'commands': session_data['commands']
-           }
-    return jsonify(res)
+    res = { 'status': 'complete',
+            'sLabel':session_data['sLabel'],
+            'nModelType':session_data['nModelType'],
+            'nInputParams':train_data['nInputParams'],
+            'nContextFrames':train_data['nContextFrames'],
+            'nItemsToRecognize':nitems,
+            'sModelFileName':output_net_name,
+            'sInputNodeName':train_data['sInputNodeName'],
+            'sOutputNodeName':train_data['sOutputNodeName'],            
+            'sLocalFolder':session_data['sLocalFolder'],
+            'nProcessingScheme':session_data['nProcessingScheme'],
+            'sCreationTime':nw.strftime('%Y/%m/%d %H:%M:%S'),
+            'commands':session_data['commands']
+            }
 
+    with open(session_json_filename, 'w') as data_file:
+        json.dump(res, data_file)
+    
+    return jsonify(res)
 
 @training_api_blueprint.route('/users/<int:user_id>/training-sessions/<session_id>/network', methods=['GET'])
 def get_training_session_network(user_id, session_id):
