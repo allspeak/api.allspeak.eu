@@ -1,10 +1,10 @@
 {"nInputParams":792,
-"nContextFrames":5,
-"sModelFileName":"user_ft",
-"sInputNodeName":"inputs/I",
-"sOutputNodeName":"SMO",
-"batch_size":100,
-"hm_epochs":20,
-"ftnet_vars_name":"fine_tuning_weights",
-"init_net_path":"project/inputnet/optimized_allcontrols_fsc.pb"
-}
+    "nContextFrames":5,
+    "sModelFileName":"user_ft",
+    "sInputNodeName":"inputs/I",
+    "sOutputNodeName":"SMO",
+    "batch_size":100,
+    "hm_epochs":20,
+    "ftnet_vars_name":"fine_tuning_weights",
+    "init_net_path":"project/inputnet/optimized_allcontrols_fsc.pb"
+    }

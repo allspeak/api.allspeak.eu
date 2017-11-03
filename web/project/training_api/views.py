@@ -99,6 +99,7 @@ def get_training_session(user_id, session_id):
     # create return JSON  
     nw = datetime.now()
     res = { 'status': 'complete',
+            'sLabel':session_data['sLabel'],
             'nModelType':session_data['nModelType'],
             'nInputParams':train_data['nInputParams'],
             'nContextFrames':train_data['nContextFrames'],
@@ -111,4 +112,9 @@ def get_training_session(user_id, session_id):
             'sCreationTime':nw.strftime('%Y/%m/%d %H:%M:%S'),
             'commands':session_data['commands']
             }
+
+    with open(session_json_filename, 'w') as data_file:
+        json.dump(res, data_file)
+    
     return jsonify(res)
+
