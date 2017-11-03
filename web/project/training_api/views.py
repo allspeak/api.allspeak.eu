@@ -70,7 +70,7 @@ def add_training_session(user_id):
 
 @training_api_blueprint.route('/users/<int:user_id>/training-sessions/<session_id>', methods=['GET'])
 def get_training_session(user_id, session_id):
-    session_path = os.path.join('data', str(session_id))
+    session_path = os.path.join('project', 'data', str(session_id))
     if (not os.path.exists(session_path)):
         abort(404)
     lockfile_path = os.path.join(session_path, '.lock')
