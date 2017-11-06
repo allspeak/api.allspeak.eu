@@ -34,6 +34,7 @@ def add_training_session(user_id):
 
     training_sessionid = uuid.uuid1()
     print(training_sessionid)
+    auth_token = uuid.uuid1()
 
     # check & prepare file system
     session_path = os.path.join('project', 'data', str(training_sessionid))
@@ -53,6 +54,11 @@ def add_training_session(user_id):
     with zipfile.ZipFile(file_path, "r") as zip_ref:
         zip_ref.extractall(data_path)
 
+    auth_filepath = os.path.join(session_path, 'auth')
+    f = open(auth_filepath, 'w')
+    f.write(str(auth_token))
+    f.close()
+
     # copy json to ../ (data/training_sessionid), read it
     src_json_filename = os.path.join(data_path, 'training.json')
     dest_json_filename = os.path.join(session_path, 'training.json')
@@ -71,7 +77,10 @@ def add_training_session(user_id):
     executor = ThreadPoolExecutor(2)
     executor.submit(train.train_net, training_sessionid, user_id,
                     modeltype, commands_ids, str_proc_scheme, True)
-    return jsonify({'training_session_id': training_sessionid})
+    return jsonify({
+        'training_session_id': training_sessionid,
+        'auth_token': auth_token
+    })
 
 
 @training_api_blueprint.route('/users/<int:user_id>/training-sessions/<session_id>', methods=['GET'])
@@ -79,6 +88,15 @@ def get_training_session(user_id, session_id):
     session_path = os.path.join('project', 'data', str(session_id))
     if (not os.path.exists(session_path)):
         abort(404)
+
+    auth_filepath = os.path.join(session_path, 'auth')
+    auth_token_in = request.headers.get('auth_token')
+    f = open(auth_filepath, 'r')
+    auth_token = f.read()
+    f.close()
+    if auth_token_in != auth_token:
+        abort(401)
+
     lockfile_path = os.path.join(session_path, '.lock')
     if (os.path.exists(lockfile_path)):
         res = {'status': 'pending'}
@@ -132,6 +150,16 @@ def get_training_session_network(user_id, session_id):
     directory_name = os.path.join(app.root_path, 'data', str(session_id))
     if not os.path.isdir(directory_name):
         abort(404)
+        
+
+    auth_filepath = os.path.join(directory_name, 'auth')
+    auth_token_in = request.headers.get('auth_token')
+    f = open(auth_filepath, 'r')
+    auth_token = f.read()
+    f.close()
+    if auth_token_in != auth_token:
+        abort(401)
+
     train_data_filepath = os.path.join(directory_name, 'training.json')
     with open(train_data_filepath, 'r') as train_data_file:
         train_data = json.load(train_data_file)
@@ -142,3 +170,5 @@ def get_training_session_network(user_id, session_id):
         return send_file(filepath, attachment_filename=attachment_filename)
     else:
         abort(404)
+
+# @training_api_blueprint.route('/users/guest/training-sessions', methods=['POST'])
