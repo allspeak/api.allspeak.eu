@@ -78,9 +78,13 @@ def request_error(e):
 
 @app.errorhandler(404)
 def not_found(e):
-    return make_response(jsonify({'error': 'Required URL does not exist'}), 400)
+    return make_response(jsonify({'error': 'Required URL does not exist'}), 404)
 
 
 @app.errorhandler(403)
 def page_not_found(e):
-    return make_response(jsonify({'error': 'Forbidden'}), 400)
+    return make_response(jsonify({'error': 'Forbidden'}), 403)
+
+@app.errorhandler(401)
+def request_error(e):
+    return make_response(jsonify({'error': 'Forbidden'}), 401)
