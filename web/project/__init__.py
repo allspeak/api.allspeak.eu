@@ -5,7 +5,7 @@
 from os.path import join, isfile
 import os
 
-from flask import Flask, render_template, make_response, jsonify, send_file, request, send_from_directory
+from flask import Flask, render_template, make_response, jsonify, send_file, request, send_from_directory, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_bcrypt import Bcrypt
@@ -26,11 +26,6 @@ app = Flask(__name__, instance_relative_config=True)
 
 app.config.from_pyfile('flask.cfg')
 
-
-@app.route("/")
-def index():
-    return render_template('index.html')
-
 @app.route('/favicon.ico')
 def favicon():
     return send_from_directory(os.path.join(app.root_path, 'static'),
@@ -43,9 +38,19 @@ migrate = Migrate(app, db)
 auth = HTTPBasicAuth()
 auth_token = HTTPBasicAuth()
 
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "user.login"
+
 # Configure the image uploading via Flask-Uploads
 images = UploadSet('images', IMAGES)
 configure_uploads(app, images)
+
+from project.models import User
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.filter(User.id == int(user_id)).first()
 
 
 ####################
@@ -53,9 +58,11 @@ configure_uploads(app, images)
 ####################
 
 from project.training_api.views import training_api_blueprint
+from project.user.views import user_blueprint
 
 # register the blueprints
 app.register_blueprint(training_api_blueprint)
+app.register_blueprint(user_blueprint)
 
 ############################
 #### custom error pages ####

@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<div class="admin-view-users">
+  <div class="page-header">
+    <h2>Patients</h2>
+  </div>
+
+  <div class="row">
+    <table class="table table-striped" id="admin_list_of_users">
+      <thead>
+        <tr>
+          <th>User Code</th>
+          <th>Registration Date</th>
+          <th>Last login</th>
+          </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+          <tr>
+            <td><a href="{{ url_for('user.user_profile', id=user.id) }}"> {{ user.get_username() }} </a></td>
+            <td> {{ user.registered_on }} </td>
+            <td> {{ user.last_logged_in }} </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
