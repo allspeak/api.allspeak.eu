@@ -18,7 +18,7 @@ from project import db
 from project.models import User
 
 # Insert user data
-neurologist = User(email=email, plaintext_password=password, role=User.NEUROLOGIST)
+neurologist = User(role=User.NEUROLOGIST, email=email, plaintext_password=password)
 db.session.add(neurologist)
 
 # Commit the changes for the users

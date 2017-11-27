@@ -57,7 +57,7 @@ class User(db.Model):
     role = db.Column(db.String, default='user')
     training_sessions = db.relationship('TrainingSession', backref='user', lazy='dynamic')
 
-    def __init__(self, email = None, plaintext_password = None, role):
+    def __init__(self, role, email = None, plaintext_password = None):
         self.email = email
         self.password = plaintext_password
         self.authenticated = False
