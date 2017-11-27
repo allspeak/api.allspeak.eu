@@ -34,7 +34,7 @@
           <ul class="nav navbar-nav">
             {% if current_user.is_authenticated %}
               <li><a href="{{ url_for('user.logout') }}">Log Out</a></li>
-              {% if current_user.role == "neurologist" %}
+              {% if current_user.role == current_user.NEUROLOGIST %}
                 <li><a href="{{ url_for('user.view_patients') }}">View Patients</a></li>
               {% else %}
               <li><a href="{{ url_for('user.view_users') }}">View Users</a></li>

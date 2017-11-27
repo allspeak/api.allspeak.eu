@@ -45,7 +45,7 @@ def login():
                 db.session.commit()
                 login_user(user)
                 flash('Thanks for logging in, {}'.format(current_user.email))
-                if user.role == 'admin':
+                if user.role == User.ADMIN:
                     redirect_url = url_for('user.view_users')
                 else:
                     redirect_url = url_for('user.view_patients')
@@ -114,19 +114,18 @@ def user_password_change():
 @user_blueprint.route('/view_patients')
 @login_required
 def view_patients():
-    if current_user.role == 'patient':
+    if current_user.role == User.PATIENT:
         abort(403)
     else:
-        users = User.query.filter(User.role == 'patient').order_by(User.id).all()
+        users = User.query.filter(User.role == User.PATIENT).order_by(User.id).all()
         return render_template('view_patients.html', users=users)
 
 
 @user_blueprint.route('/view_users')
 @login_required
 def view_users():
-    if current_user.role != 'admin':
+    if current_user.role != User.ADMIN:
         abort(403)
     else:
-        roles_to_display =  ['patient', 'neurologist', 'admin']     
-        users = User.query.filter(User.role.in_(roles_to_display)).order_by(User.id).all()
+        users = User.query.order_by(User.id).all()
         return render_template('view_users.html', users=users)

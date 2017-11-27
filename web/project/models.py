@@ -43,6 +43,9 @@ class TrainingSession(db.Model):
 class User(db.Model):
 
     __tablename__ = "user"
+    PATIENT = 'patient'
+    NEUROLOGIST = 'neurologist'
+    ADMIN = 'admin'
 
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String, default=None, nullable=True)
@@ -54,7 +57,7 @@ class User(db.Model):
     role = db.Column(db.String, default='user')
     training_sessions = db.relationship('TrainingSession', backref='user', lazy='dynamic')
 
-    def __init__(self, email, plaintext_password, role='patient'):
+    def __init__(self, email, plaintext_password, role):
         self.email = email
         self.password = plaintext_password
         self.authenticated = False
@@ -96,13 +99,13 @@ class User(db.Model):
         return str(self.id)
 
     def get_username(self):
-        if self.role == 'patient':
+        if self.role == User.PATIENT:
             return 'HSR_' + self.get_id().zfill(3)
         else:
             return self.email
 
     def get_homepage(self):
-        if self.role == 'admin':
+        if self.role == User.ADMIN:
             return url_for('user.view_users')
         else:
             return url_for('user.view_patients')
