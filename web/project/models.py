@@ -49,7 +49,7 @@ class User(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String, default=None, nullable=True)
-    _password = db.Column(db.Binary(60), nullable=False)
+    _password = db.Column(db.Binary(60), nullable=True)
     authenticated = db.Column(db.Boolean, default=False)
     registered_on = db.Column(db.DateTime, nullable=True)
     last_logged_in = db.Column(db.DateTime, nullable=True)
@@ -57,7 +57,7 @@ class User(db.Model):
     role = db.Column(db.String, default='user')
     training_sessions = db.relationship('TrainingSession', backref='user', lazy='dynamic')
 
-    def __init__(self, email, plaintext_password, role):
+    def __init__(self, email = None, plaintext_password = None, role):
         self.email = email
         self.password = plaintext_password
         self.authenticated = False
@@ -72,7 +72,10 @@ class User(db.Model):
 
     @password.setter
     def set_password(self, plaintext_password):
-        self._password = bcrypt.generate_password_hash(plaintext_password)
+        if plaintext_password is None:
+            self._password = None
+        else:
+            self._password = bcrypt.generate_password_hash(plaintext_password)
 
     @hybrid_method
     def is_correct_password(self, plaintext_password):
