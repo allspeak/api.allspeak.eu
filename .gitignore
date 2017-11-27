@@ -5,7 +5,5 @@ web/instance/flask.cfg
 web/project/data/*
 !web/project/data/.gitkeep
 /nbproject
-web/project/training_api/libs/__pycache__
-web/project/__pycache__
-web/project/training_api/__pycache__
+__pycache__/
 web/data/*
