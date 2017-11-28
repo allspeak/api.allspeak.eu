@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+{% from "_form_macros.html" import render_field_without_label %}
+
+{% block content %}
+
+<div class="user-profile">
+  <div class="page-header">
+    <h2>New Patient</h2>
+  </div>
+
+  <p>Please enter the password for patient:</p>
+  <form action="{{ url_for('user.new_patient') }}" method="POST">
+  {{ form.csrf_token }}
+    <dl>
+      {{ render_field_without_label(form.password, placeholder="Enter New Password") }}
+    </dl>
+    <button class="btn btn-sm btn-success" type="submit">Insert</button>
+  </form>
+</div>
+
+{% endblock %}

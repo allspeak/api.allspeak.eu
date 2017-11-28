@@ -39,6 +39,7 @@
               {% else %}
               <li><a href="{{ url_for('user.view_users') }}">View Users</a></li>
               {% endif %}
+              <li><a href="{{ url_for('user.new_patient') }}">New Patient</a></li>
             {% else %}
               <li><a href="{{ url_for('user.login') }}">Log In</a></li>
             {% endif %}

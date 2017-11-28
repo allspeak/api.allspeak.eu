@@ -5,7 +5,7 @@ from threading import Thread
 from itsdangerous import URLSafeTimedSerializer
 from datetime import datetime
 
-from .forms import LoginForm, EmailForm, PasswordForm
+from .forms import LoginForm, EmailForm, PasswordForm, NewPatientForm
 from project import db, app
 from project.models import User
 
@@ -129,3 +129,28 @@ def view_users():
     else:
         users = User.query.order_by(User.id).all()
         return render_template('view_users.html', users=users)
+
+
+# @user_blueprint.route('/new_patient')
+# @login_required
+# def new_patient():
+#     return render_template('new_patient.html')
+
+    
+@user_blueprint.route('/new_patient', methods=['GET', 'POST'])
+def new_patient():
+    form = NewPatientForm(request.form)
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            try:
+                new_user = User(role=User.PATIENT)
+                new_user.authenticated = False
+                new_user.password = form.password.data
+                db.session.add(new_user)
+                db.session.commit()
+                flash('New patient added', 'success')
+                return redirect(url_for('user.user_profile', id=new_user.id))
+            except IntegrityError:
+                db.session.rollback()
+                flash('An error happened', 'error')
+    return render_template('new_patient.html', form=form)
