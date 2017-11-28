@@ -49,13 +49,13 @@ class User(db.Model):
     default_pwd = 'changeme'
 
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String, default=None, nullable=True)
+    email = db.Column(db.String, default=None, nullable=True, unique=True)
     _password = db.Column(db.Binary(60), nullable=True)
     authenticated = db.Column(db.Boolean, default=False)
     registered_on = db.Column(db.DateTime, nullable=True)
     last_logged_in = db.Column(db.DateTime, nullable=True)
     current_logged_in = db.Column(db.DateTime, nullable=True)
-    role = db.Column(db.String, default='user')
+    role = db.Column(db.String, default=PATIENT, nullable=False)
     training_sessions = db.relationship('TrainingSession', backref='user', lazy='dynamic')
 
     def __init__(self, role, email = None, plaintext_password = default_pwd):
