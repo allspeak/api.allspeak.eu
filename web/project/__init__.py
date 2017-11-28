@@ -53,6 +53,15 @@ def load_user(user_id):
     return User.query.filter(User.id == int(user_id)).first()
 
 
+@login_manager.request_loader
+def load_user_from_request(request):
+    api_key = request.headers.get('api_key')
+    if api_key is None:
+        return None
+    user = User.query.filter(User.api_key == api_key).first()
+    return user
+
+
 ####################
 #### blueprints ####
 ####################

@@ -5,6 +5,7 @@ from markdown import markdown
 from flask import url_for
 import bleach
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+import uuid
 
 class TrainingSession(db.Model):
 
@@ -56,6 +57,7 @@ class User(db.Model):
     last_logged_in = db.Column(db.DateTime, nullable=True)
     current_logged_in = db.Column(db.DateTime, nullable=True)
     role = db.Column(db.String, default=PATIENT, nullable=False)
+    api_key = db.Column(db.String, nullable=True, unique=True)
     training_sessions = db.relationship('TrainingSession', backref='user', lazy='dynamic')
 
     def __init__(self, role, email = None, plaintext_password = default_pwd):
@@ -64,8 +66,9 @@ class User(db.Model):
         self.authenticated = False
         self.registered_on = datetime.now()
         self.last_logged_in = None
-        self.current_logged_in = datetime.now()
+        self.current_logged_in = None
         self.role = role
+        self.regenerate_api_key()
 
     @hybrid_property
     def password(self):
@@ -130,4 +133,11 @@ class User(db.Model):
 
     def __repr__(self):
         return '<User {}>'.format(self.email)
+
+    def regenerate_api_key(self):
+        self.api_key = uuid.uuid1()
+
+    def refresh_login(self):
+        self.last_logged_in = self.current_logged_in
+        self.current_logged_in = datetime.now()
 
