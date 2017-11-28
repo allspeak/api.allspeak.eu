@@ -1,7 +1,4 @@
-{% extends "layout.html" %}
-{% from "_form_macros.html" import render_field %}
-
-{% block content %}
+{% extends "layout.html" %} {% from "_form_macros.html" import render_field %} {% block content %}
 
 <div class="user-profile">
   <div class="page-header">
@@ -12,24 +9,31 @@
     <div class="col-sm-6">
       <div class="panel panel-primary">
         <div class="panel-heading">Username</div>
-        <div class="panel-body">{{user.get_username()}}</div>
+        <div class="panel-body">
+          {{user.get_username()}}
+        </div>
       </div>
 
       <div class="panel panel-info">
         <div class="panel-heading">Account Actions</div>
-        {% if user.role != 'patient' %}
-        <div class="panel-body"><a href="{{ url_for('user.user_email_change') }}">Change Email Address</a></div>
+        {% if user.role != user.PATIENT %}
+        <div class="panel-body">
+          <a href="{{ url_for('user.user_email_change') }}">Change Email Address</a>
+        </div>
         {% endif %}
-        <div class="panel-body"><a href="{{ url_for('user.user_password_change') }}">Change Password</a></div>
+        <div class="panel-body">
+          <a href="{{ url_for('user.user_password_change') }}">Change Password</a>
+        </div>
       </div>
 
       <div class="panel panel-info">
         <div class="panel-heading">Info</div>
+        <div class="panel-body">api key: {{user.api_key}}</div>
         <div class="panel-body">Inserted on: {{ user.registered_on.strftime("%A %B %d, %Y") }}</div>
-        {% if user.last_logged_in != None %}
-          <div class="panel-body">Last login: {{ user.last_logged_in.strftime("%A %B %d, %Y") }}</div>
+        {% if user.current_logged_in != None %}
+        <div class="panel-body">Last login: {{ user.current_logged_in.strftime("%A %B %d, %Y") }}</div>
         {% else %}
-          <div class="panel-body">Never logged in</div>
+        <div class="panel-body">Never logged in</div>
         {% endif %}
       </div>
     </div>

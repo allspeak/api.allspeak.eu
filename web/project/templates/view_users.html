@@ -11,8 +11,9 @@
     <table class="table table-striped" id="admin_list_of_users">
       <thead>
         <tr>
-          <th>User Code</th>
+          <th>Username</th>
           <th>Role</th>
+          <th>api key</th>
           <th>Registration Date</th>
           <th>Last login</th>
           </tr>
@@ -22,8 +23,9 @@
           <tr>
             <td><a href="{{ url_for('user.user_profile', id=user.id) }}"> {{ user.get_username() }} </a></td>
             <td> {{ user.role }} </td>
+            <td> {{ user.api_key }} </td>
             <td> {{ user.registered_on }} </td>
-            <td> {{ user.last_logged_in }} </td>
+            <td> {{ user.current_logged_in }} </td>
           </tr>
         {% endfor %}
       </tbody>
