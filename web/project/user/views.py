@@ -1,4 +1,4 @@
-from flask import render_template, Blueprint, request, redirect, url_for, flash, abort
+from flask import render_template, Blueprint, request, redirect, url_for, flash, abort, jsonify
 from sqlalchemy.exc import IntegrityError
 from flask_login import login_user, current_user, login_required, logout_user
 from threading import Thread
@@ -10,6 +10,7 @@ from project import db, app
 from project.models import User
 
 user_blueprint = Blueprint('user', __name__)
+
 
 def flash_errors(form):
     for field, errors in form.errors.items():
@@ -39,8 +40,7 @@ def login():
             user = User.query.filter_by(email=form.email.data).first()
             if user is not None and user.is_correct_password(form.password.data):
                 user.authenticated = True
-                user.last_logged_in = user.current_logged_in
-                user.current_logged_in = datetime.now()
+                user.refresh_login()
                 db.session.add(user)
                 db.session.commit()
                 login_user(user)
@@ -81,7 +81,8 @@ def user_email_change():
     if request.method == 'POST':
         if form.validate_on_submit():
             try:
-                user_check = User.query.filter_by(email=form.email.data).first()
+                user_check = User.query.filter_by(
+                    email=form.email.data).first()
                 if user_check is None:
                     user = current_user
                     user.email = form.email.data
@@ -117,7 +118,8 @@ def view_patients():
     if current_user.role == User.PATIENT:
         abort(403)
     else:
-        users = User.query.filter(User.role == User.PATIENT).order_by(User.id).all()
+        users = User.query.filter(
+            User.role == User.PATIENT).order_by(User.id).all()
         return render_template('view_patients.html', users=users)
 
 
@@ -136,7 +138,7 @@ def view_users():
 # def new_patient():
 #     return render_template('new_patient.html')
 
-    
+
 @user_blueprint.route('/new_patient', methods=['GET', 'POST'])
 def new_patient():
     form = NewPatientForm(request.form)
@@ -154,3 +156,13 @@ def new_patient():
                 db.session.rollback()
                 flash('An error happened', 'error')
     return render_template('new_patient.html', form=form)
+
+
+@user_blueprint.route('/api_key_reset', methods=["POST"])
+def api_key_reset():
+    current_user.refresh_login()
+    current_user.regenerate_api_key()
+    db.session.add(current_user)
+    db.session.commit()
+    res = {'api_key': current_user.api_key}
+    return jsonify(res)
