@@ -70,13 +70,18 @@ def logout():
 @user_blueprint.route('/<id>/user_profile')
 @login_required
 def user_profile(id):
+    if current_user.id != id and current_user.role != User.ADMIN:
+        abort(403)
     user = User.query.filter(User.id == id).first()
     return render_template('user_profile.html', user=user)
 
 
-@user_blueprint.route('/email_change', methods=["GET", "POST"])
+@user_blueprint.route('/<id>/email_change', methods=["GET", "POST"])
 @login_required
-def user_email_change():
+def user_email_change(id):
+    if current_user.id != id and current_user.role != User.ADMIN:
+        abort(403)
+    user = User.query.filter(User.id == id).first()
     form = EmailForm()
     if request.method == 'POST':
         if form.validate_on_submit():
@@ -84,7 +89,6 @@ def user_email_change():
                 user_check = User.query.filter_by(
                     email=form.email.data).first()
                 if user_check is None:
-                    user = current_user
                     user.email = form.email.data
                     db.session.add(user)
                     db.session.commit()
@@ -93,23 +97,25 @@ def user_email_change():
                     flash('Sorry, that email already exists!', 'error')
             except IntegrityError:
                 flash('Error! That email already exists!', 'error')
-    return render_template('email_change.html', form=form)
+    return render_template('email_change.html', form=form, user=user)
 
 
-@user_blueprint.route('/password_change', methods=["GET", "POST"])
+@user_blueprint.route('/<id>/password_change', methods=["GET", "POST"])
 @login_required
-def user_password_change():
+def user_password_change(id):
+    if current_user.id != id and current_user.role != User.ADMIN:
+        abort(403)
+    user = User.query.filter(User.id == id).first()
     form = PasswordForm()
     if request.method == 'POST':
         if form.validate_on_submit():
-            user = current_user
             user.password = form.password.data
             db.session.add(user)
             db.session.commit()
             flash('Password has been updated!', 'success')
             return redirect(url_for('user.user_profile', id=user.id))
 
-    return render_template('password_change.html', form=form)
+    return render_template('password_change.html', form=form, user=user)
 
 
 @user_blueprint.route('/view_patients')
