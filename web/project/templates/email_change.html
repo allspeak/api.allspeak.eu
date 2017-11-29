@@ -8,9 +8,9 @@
     <h2>Email Change</h2>
   </div>
 
-  <p>Current Email: {{ current_user.email }}</p>
+  <p>Current Email: {{ user.email }}</p>
   <p>Please enter your new email address:</p>
-  <form action="{{ url_for('user.user_email_change') }}" method="POST">
+  <form action="{{ url_for('user.user_email_change', id=user.id) }}" method="POST">
   {{ form.csrf_token }}
     <dl>
       {{ render_field_without_label(form.email, placeholder="Enter New Email Address") }}

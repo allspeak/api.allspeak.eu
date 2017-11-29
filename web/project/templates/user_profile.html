@@ -18,11 +18,11 @@
         <div class="panel-heading">Account Actions</div>
         {% if user.role != user.PATIENT %}
         <div class="panel-body">
-          <a href="{{ url_for('user.user_email_change') }}">Change Email Address</a>
+          <a href="{{ url_for('user.user_email_change', id=user.id) }}">Change Email Address</a>
         </div>
         {% endif %} {% if user.role != user.PATIENT %}
         <div class="panel-body">
-          <a href="{{ url_for('user.user_password_change') }}">Change Password</a>
+          <a href="{{ url_for('user.user_password_change', id=user.id) }}">Change Password</a>
         </div>
         {% endif %}
         <div class="panel-body">

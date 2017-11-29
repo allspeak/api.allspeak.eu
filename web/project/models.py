@@ -37,7 +37,7 @@ class TrainingSession(db.Model):
         }
 
     def get_url(self):
-        return url_for('training_api.get_training_session', recipe_id=self.id, _external=True)
+        return url_for('training_api.get_training_session', session_id=self.id, _external=True)
 
 
 

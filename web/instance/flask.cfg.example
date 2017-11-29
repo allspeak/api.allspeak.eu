@@ -1,6 +1,6 @@
 ##########################################################
 #
-# This is a sample flask.cfg for developing the Flask Recipe App.
+# This is a sample flask.cfg for developing the All Speak App.
 #
 ##########################################################
 import os
