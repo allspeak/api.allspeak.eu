@@ -25,4 +25,11 @@ body {
     font-size: 20px;
     color: #fff;
   }
+
+  #allspeak-navbar .navbar-right button, 
+  #allspeak-navbar .navbar-right a {
+    padding-left: 0;
+    padding-right:0;
+  }
+
   

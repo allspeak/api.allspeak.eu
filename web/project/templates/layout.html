@@ -1,94 +1,120 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="All Speak">
-    <meta name="author" content="Federico Bozizni">
-    <title>All Speak</title>
-    <!-- styles -->
-    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-  </head>
 
-  <body>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="All Speak">
+  <meta name="author" content="Federico Bozizni">
+  <title>All Speak</title>
+  <!-- styles -->
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7"
+    crossorigin="anonymous">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
 
-    <!-- Static navbar -->
-    <nav class="navbar navbar-default navbar-fixed-top">
-      <div class="container">
+<body>
 
-        <!-- Brand and toggle get grouped for better mobile display -->
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#allspeak-navbar-collapse-1" aria-expanded="false">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" href="/">All Speak</a>
-        </div>
-
-        <!-- Collect the nav links, forms, and other content for toggling -->
-        <div class="collapse navbar-collapse" id="recipes-navbar-collapse-1">
-          <ul class="nav navbar-nav">
-            {% if current_user.is_authenticated %}
-              <li><a href="{{ url_for('user.logout') }}">Log Out</a></li>
-              {% if current_user.role == current_user.NEUROLOGIST %}
-                <li><a href="{{ url_for('user.view_patients') }}">View Patients</a></li>
-              {% else %}
-              <li><a href="{{ url_for('user.view_users') }}">View Users</a></li>
-              {% endif %}
-              <li><a href="{{ url_for('user.new_patient') }}">New Patient</a></li>
-            {% else %}
-              <li><a href="{{ url_for('user.login') }}">Log In</a></li>
-            {% endif %}
-          </ul>
-          <ul class="nav navbar-nav navbar-right">
-            {% if current_user.is_authenticated %}
-              <li><a href="{{ url_for('user.user_profile', id=current_user.id) }}">{{current_user.email}}</a></li>
-            {% else %}
-              <li><a href="#">Welcome!</a></li>
-            {% endif %}
-          </ul>
-        </div><!--/.nav-collapse -->
-      </div><!-- /.container -->
-    </nav>
-
+  <!-- Static navbar -->
+  <nav class="navbar navbar-default navbar-fixed-top">
     <div class="container">
-      <div class="content">
 
-        <!-- flash messages -->
-        {% for error_message in get_flashed_messages(category_filter=["error"]) %}
-          <div class="alert alert-danger alert-dismissible">{{ error_message }}</div>
-        {% endfor %}
+      <!-- Brand and toggle get grouped for better mobile display -->
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#allspeak-navbar" aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="/">All Speak</a>
+      </div>
 
-        {% for success_message in get_flashed_messages(category_filter=["success"]) %}
-          <div class="alert alert-success alert-dismissible">{{ success_message }}</div>
-        {% endfor %}
+      <!-- Collect the nav links, forms, and other content for toggling -->
+      <div class="collapse navbar-collapse" id="allspeak-navbar">
+        <ul class="nav navbar-nav">
+          {% if current_user.is_authenticated %} {% if current_user.role == current_user.NEUROLOGIST %}
+          <li>
+            <a href="{{ url_for('user.view_patients') }}">View Patients</a>
+          </li>
+          {% else %}
+          <li>
+            <a href="{{ url_for('user.view_users') }}">View Users</a>
+          </li>
+          {% endif %}
+          <li>
+            <a href="{{ url_for('user.new_patient') }}">New Patient</a>
+          </li>
+          {% else %}
+          <li>
+            <a href="{{ url_for('user.login') }}">Log In</a>
+          </li>
+          {% endif %}
+        </ul>
+        <ul class="nav navbar-nav navbar-right">
+          {% if current_user.is_authenticated %}
+          <li>
+            <a href="{{ url_for('user.user_profile', id=current_user.id) }}">{{current_user.email}}</a>
+          </li>
+          <li>
+            <div class="navbar-form">
+              <div class="btn-group">
+                <button type="button" class="btn btn-link dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu">
+                  <li>
+                    <a class="btn btn-link" href=" {{ url_for( 'user.logout') }} ">Log Out</a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </li>
+          {% else %}
+          <li>
+            <a href="# ">Welcome!</a>
+          </li>
+          {% endif %}
+        </ul>
+      </div>
+      <!--/.nav-collapse -->
+    </div>
+    <!-- /.container -->
+  </nav>
 
-        {% for info_message in get_flashed_messages(category_filter=["info"]) %}
-          <div class="alert alert-info alert-dismissible">{{ info_message }}</div>
-        {% endfor %}
+  <div class="container ">
+    <div class="content ">
 
-<!--
-        {% for debug_message in get_flashed_messages(category_filter=["debug"]) %}
-          <div class="alert alert-info alert-dismissible">{{ debug_message }}</div>
+      <!-- flash messages -->
+      {% for error_message in get_flashed_messages(category_filter=["error "]) %}
+      <div class="alert alert-danger alert-dismissible ">{{ error_message }}</div>
+      {% endfor %} {% for success_message in get_flashed_messages(category_filter=["success "]) %}
+      <div class="alert alert-success alert-dismissible ">{{ success_message }}</div>
+      {% endfor %} {% for info_message in get_flashed_messages(category_filter=["info "]) %}
+      <div class="alert alert-info alert-dismissible ">{{ info_message }}</div>
+      {% endfor %}
+
+      <!--
+        {% for debug_message in get_flashed_messages(category_filter=["debug "]) %}
+          <div class="alert alert-info alert-dismissible ">{{ debug_message }}</div>
         {% endfor %}
 -->
-        <!-- child template -->
-        {% block content %}
-        {% endblock %}
+      <!-- child template -->
+      {% block content %} {% endblock %}
 
-      </div>
-      <div class="footer">
-        <hr>
-        <p>All Speak - 2017</p>
-      </div>
-    </div><!-- /.container -->
+    </div>
+    <div class="footer ">
+      <hr>
+      <p>All Speak - 2017</p>
+    </div>
+  </div>
+  <!-- /.container -->
 
-    <!-- scripts -->
-    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
-  </body>
+  <!-- scripts -->
+  <script src="//code.jquery.com/jquery-1.11.3.min.js "></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js " integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS "
+    crossorigin="anonymous "></script>
+</body>
+
 </html>

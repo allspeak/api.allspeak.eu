@@ -70,8 +70,6 @@ def logout():
 @user_blueprint.route('/<int:id>/user_profile')
 @login_required
 def user_profile(id):
-    print(current_user.id)
-    print(id)
     if current_user.id != id and current_user.role != User.ADMIN:
         abort(403)
     user = User.query.filter(User.id == id).first()
