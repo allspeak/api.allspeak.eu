@@ -67,7 +67,7 @@ def logout():
     return redirect(url_for('user.login'))
 
 
-@user_blueprint.route('/user_profile/<id>')
+@user_blueprint.route('/<id>/user_profile')
 @login_required
 def user_profile(id):
     user = User.query.filter(User.id == id).first()
@@ -148,13 +148,3 @@ def new_patient():
                 db.session.rollback()
                 flash('An error happened', 'error')
     return render_template('new_patient.html', form=form)
-
-
-@user_blueprint.route('/api_key_reset', methods=["POST"])
-def api_key_reset():
-    current_user.refresh_login()
-    current_user.regenerate_api_key()
-    db.session.add(current_user)
-    db.session.commit()
-    res = {'api_key': current_user.api_key}
-    return jsonify(res)

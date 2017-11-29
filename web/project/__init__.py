@@ -68,10 +68,12 @@ def load_user_from_request(request):
 
 from project.training_api.views import training_api_blueprint
 from project.user.views import user_blueprint
+from project.user_api.views import user_api_blueprint
 
 # register the blueprints
 app.register_blueprint(training_api_blueprint)
 app.register_blueprint(user_blueprint)
+app.register_blueprint(user_api_blueprint)
 
 ############################
 #### custom error pages ####
