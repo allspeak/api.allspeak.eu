@@ -12,6 +12,12 @@ from project.models import User
 user_blueprint = Blueprint('user', __name__)
 
 
+def can_operate_on(user_from, user_to):
+    return (user_from.role == User.ADMIN or
+            user_from.id == user_to.id or
+            user_to.role == User.PATIENT)
+
+
 def flash_errors(form):
     for field, errors in form.errors.items():
         for error in errors:
@@ -70,18 +76,18 @@ def logout():
 @user_blueprint.route('/<int:id>/user_profile')
 @login_required
 def user_profile(id):
-    if current_user.id != id and current_user.role != User.ADMIN:
-        abort(403)
     user = User.query.filter(User.id == id).first()
+    if not can_operate_on(current_user, user):
+        abort(403)
     return render_template('user_profile.html', user=user)
 
 
 @user_blueprint.route('/<int:id>/email_change', methods=["GET", "POST"])
 @login_required
 def user_email_change(id):
-    if current_user.id != id and current_user.role != User.ADMIN:
-        abort(403)
     user = User.query.filter(User.id == id).first()
+    if not can_operate_on(current_user, user):
+        abort(403)
     form = EmailForm()
     if request.method == 'POST':
         if form.validate_on_submit():
@@ -103,9 +109,9 @@ def user_email_change(id):
 @user_blueprint.route('/<int:id>/password_change', methods=["GET", "POST"])
 @login_required
 def user_password_change(id):
-    if current_user.id != id and current_user.role != User.ADMIN:
-        abort(403)
     user = User.query.filter(User.id == id).first()
+    if not can_operate_on(current_user, user):
+        abort(403)
     form = PasswordForm()
     if request.method == 'POST':
         if form.validate_on_submit():
@@ -160,6 +166,8 @@ def new_patient():
 @login_required
 def api_key_reset(id):
     user = User.query.filter(User.id == id).first()
+    if not can_operate_on(current_user, user):
+        abort(403)
     if request.method == 'POST':
         try:
             user.regenerate_api_key()
