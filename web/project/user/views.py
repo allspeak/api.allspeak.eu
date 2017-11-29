@@ -133,12 +133,6 @@ def view_users():
         return render_template('view_users.html', users=users)
 
 
-# @user_blueprint.route('/new_patient')
-# @login_required
-# def new_patient():
-#     return render_template('new_patient.html')
-
-
 @user_blueprint.route('/new_patient', methods=['GET', 'POST'])
 def new_patient():
     form = NewPatientForm(request.form)
@@ -146,8 +140,6 @@ def new_patient():
         if form.validate_on_submit():
             try:
                 new_user = User(role=User.PATIENT)
-                new_user.authenticated = False
-                new_user.password = form.password.data
                 db.session.add(new_user)
                 db.session.commit()
                 flash('New patient added', 'success')

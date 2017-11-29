@@ -16,4 +16,4 @@ class PasswordForm(Form):
     password = PasswordField('Password', validators=[DataRequired()])
 
 class NewPatientForm(Form):
-    password = PasswordField('Password', validators=[DataRequired()])
+    pass

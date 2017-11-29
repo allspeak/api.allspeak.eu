@@ -47,7 +47,6 @@ class User(db.Model):
     PATIENT = 'patient'
     NEUROLOGIST = 'neurologist'
     ADMIN = 'admin'
-    default_pwd = 'changeme'
 
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String, default=None, nullable=True, unique=True)
@@ -60,7 +59,7 @@ class User(db.Model):
     api_key = db.Column(db.String, nullable=True, unique=True)
     training_sessions = db.relationship('TrainingSession', backref='user', lazy='dynamic')
 
-    def __init__(self, role, email = None, plaintext_password = default_pwd):
+    def __init__(self, role, email = None, plaintext_password = None):
         self.email = email
         self.password = plaintext_password
         self.authenticated = False

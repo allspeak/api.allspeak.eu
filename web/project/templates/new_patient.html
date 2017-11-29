@@ -8,13 +8,13 @@
     <h2>New Patient</h2>
   </div>
 
-  <p>Please enter the password for patient:</p>
+  <p>Do you really want to insert a new patient?</p>
   <form action="{{ url_for('user.new_patient') }}" method="POST">
   {{ form.csrf_token }}
     <dl>
-      {{ render_field_without_label(form.password, placeholder="Enter New Password") }}
     </dl>
-    <button class="btn btn-sm btn-success" type="submit">Insert</button>
+    <button class="btn btn-sm btn-success" type="submit">Confirm</button>
+    <a class="btn btn-sm bt-default" href="{{current_user.get_homepage()}}">Cancel</a>
   </form>
 </div>
 
