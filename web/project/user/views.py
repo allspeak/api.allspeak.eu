@@ -148,3 +148,20 @@ def new_patient():
                 db.session.rollback()
                 flash('An error happened', 'error')
     return render_template('new_patient.html', form=form)
+
+
+@user_blueprint.route('/<id>/api_key_reset', methods=["GET", "POST"])
+@login_required
+def api_key_reset(id):
+    user = User.query.filter(User.id == id).first()
+    if request.method == 'POST':
+        try:
+            user.regenerate_api_key()
+            db.session.add(user)
+            db.session.commit()
+            flash('api key reset completed with success', 'success')
+            return redirect(url_for('user.user_profile', id=user.id))
+        except IntegrityError:
+            db.session.rollback()
+            flash('An error happened', 'error')
+    return render_template('api_key_reset.html', user=user)

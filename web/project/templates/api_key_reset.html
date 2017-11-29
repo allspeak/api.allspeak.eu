@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% from "_form_macros.html" import render_field_without_label %}
+
+{% block content %}
+
+<div class="user-profile">
+  <div class="page-header">
+    <h2>Reset api key</h2>
+  </div>
+
+  <p>Do you really want to reset the api key for patient {{user.get_username()}}?</p>
+  <form action="{{ url_for('user.api_key_reset', id=user.id) }}" method="POST">
+    <button class="btn btn-sm btn-success" type="submit">Confirm</button>
+    <a class="btn btn-sm bt-default" href="{{current_user.get_homepage()}}">Cancel</a>
+  </form>
+</div>
+
+{% endblock %}

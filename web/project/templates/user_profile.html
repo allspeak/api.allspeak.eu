@@ -20,9 +20,13 @@
         <div class="panel-body">
           <a href="{{ url_for('user.user_email_change') }}">Change Email Address</a>
         </div>
-        {% endif %}
+        {% endif %} {% if user.role != user.PATIENT %}
         <div class="panel-body">
           <a href="{{ url_for('user.user_password_change') }}">Change Password</a>
+        </div>
+        {% endif %}
+        <div class="panel-body">
+          <a href="{{ url_for('user.api_key_reset', id=user.id) }}">Reset api key</a>
         </div>
       </div>
 
