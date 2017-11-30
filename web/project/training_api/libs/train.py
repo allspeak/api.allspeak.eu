@@ -22,6 +22,8 @@ from . import models
 from . import utilities
 from . import context
 from pathlib import Path
+from project import db
+from project.models import TrainingSession
 
 
 # ===========================================================================================================================
@@ -568,14 +570,10 @@ def fineTuningFolderOnlyTrain(inputdata_folder, commands_list, output_net_path, 
                 shutil.rmtree(inputdata_folder)  # /matrices is defined in createSubjectMatrix
 
 
-def train_net(training_sessionid, user_id, modeltype, commands_ids, str_proc_scheme, clean_folder=True):
-
-    #print(str(training_sessionid) + " " + str(user_id) + " " + str(modeltype) + " " + str_proc_scheme + " " + str(len(commands_ids)) + " ")
+def train_net(training_sessionid, modeltype, commands_ids, str_proc_scheme, clean_folder=True):
+    
     folder_path = os.path.join('project', 'data', str(training_sessionid))
-    lockfile_path = os.path.join(folder_path, '.lock')
-    Path(lockfile_path).touch()
-
-
+    
     if modeltype == 274:
         trainparams_json = os.path.join('project', 'training_api', 'train_params.json')    
     else:
@@ -595,7 +593,7 @@ def train_net(training_sessionid, user_id, modeltype, commands_ids, str_proc_sch
     ctx_frames = train_data['nContextFrames']           # 
     sModelFileName = train_data['sModelFileName']   # 
 
-    output_net_name = "%s_%d_%s" % (sModelFileName, user_id, str_proc_scheme)
+    output_net_name = "%s_%s_%s" % (sModelFileName, training_sessionid, str_proc_scheme)
     output_net_path = os.path.join(folder_path, 'data', 'net')
     data_path = os.path.join(folder_path, 'data')
 
@@ -609,4 +607,7 @@ def train_net(training_sessionid, user_id, modeltype, commands_ids, str_proc_sch
         fineTuningFolderOnlyTrain(data_path, commands_ids, output_net_path, output_net_name, train_data, clean_folder)
 
     print('tuning done')
-    os.remove(lockfile_path)
+    training_session = TrainingSession.query.filter_by(session_uid=str(training_sessionid)).first()
+    training_session.completed = True
+    db.session.add(training_session)
+    db.session.commit()
