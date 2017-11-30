@@ -134,3 +134,50 @@ class User(db.Model):
         self.last_logged_in = self.current_logged_in
         self.current_logged_in = datetime.now()
 
+
+class Device(db.Model):
+
+    __tablename__ = "device"
+
+    id = db.Column(db.Integer, primary_key=True)
+    uuid = db.Column(db.String, default=None, nullable=True)
+    model = db.Column(db.String, default=None, nullable=True)
+    manufacturer = db.Column(db.String, default=None, nullable=True)
+    serial = db.Column(db.String, default=None, nullable=True)
+    version = db.Column(db.String, default=None, nullable=True)
+    platform = db.Column(db.String, default=None, nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    registered_on = db.Column(db.DateTime, nullable=True)
+
+    def __init__(self):
+        self.registered_on = datetime.now()
+
+    def import_data(self, user, request):
+        try:
+            json_data = request.get_json()
+            self.uuid = json_data['uuid']
+            self.model = json_data['model']
+            self.manufacturer = json_data['manufacturer']
+            self.serial = json_data['serial']
+            self.version = json_data['version']
+            self.platform = json_data['platform']
+            self.user_id = user.id
+        except KeyError as e:
+            raise ValidationError('Invalid device: missing ' + e.args[0])
+        return self
+
+    def export_data(self):
+        return {
+            'self_url': self.get_url(),
+            'uuid': self.uuid,
+            'model': self.model,
+            'manufacturer': self.manufacturer,
+            'serial': self.serial,
+            'version': self.version,
+            'platform': self.platform,
+            'user_id': self.user_id,
+            'registered_on': self.registered_on
+        }
+
+    def get_url(self):
+        return url_for('user_api.get_device', uuid=self.uuid, _external=True)
