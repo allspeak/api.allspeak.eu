@@ -12,32 +12,26 @@ class TrainingSession(db.Model):
     __tablename__ = "training_session"
 
     id = db.Column(db.Integer, primary_key=True)
-    device_id = db.Column(db.Integer, default=None, nullable=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    session_uid = db.Column(db.Integer, default=None, nullable=True, unique=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    completed = db.Column(db.Boolean, default=False, nullable=False)
+    created_on = db.Column(db.DateTime, nullable=True)
 
-    def __init__(self, user_id=None, device_id=None):
+    def __init__(self, session_uid, user_id=None):
         self.user_id = user_id
-        self.device_id = device_id
-
-    def import_data(self, request):
-        try:
-            json_data = request.get_json()
-            self.user_id = json_data['user_id']
-            self.device_id = json_data['device_id']
-        except KeyError as e:
-            raise ValidationError('Invalid training session: missing ' + e.args[0])
-        return self    
+        self.session_uid = session_uid
+        self.completed = False
+        self.created_on = datetime.now()  
     
     def export_data(self):
         return {
             'self_url': self.get_url(),
             'id': self.id,
             'user_id': self.user_id,
-            'device_id': self.device_id
+            'session_uid': self.session_uid,
+            'completed': self.completed,
+            'created_on': self.created_on
         }
-
-    def get_url(self):
-        return url_for('training_api.get_training_session', session_id=self.id, _external=True)
 
 
 
