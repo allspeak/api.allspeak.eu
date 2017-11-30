@@ -7,7 +7,7 @@ services:
       - "8095:8000"
     volumes:
       - ./web:/home/flask/app/web
-    command: /usr/local/bin/gunicorn --reload -w 2 -b :8000 project:app
+    command: /usr/local/bin/gunicorn --timeout=600 --reload -w 2 -b :8000 project:app
     environment:
       PYTHONUNBUFFERED: 0
     depends_on:
