@@ -26,6 +26,15 @@ app = Flask(__name__, instance_relative_config=True)
 
 app.config.from_pyfile('flask.cfg')
 
+def format_datetime(value):
+    format="%Y-%m-%d %H:%M:%S"
+    if value is None:
+        return 'Never'
+    else:
+        return value.strftime(format)
+
+app.jinja_env.filters['datetime'] = format_datetime
+
 @app.route('/favicon.ico')
 def favicon():
     return send_from_directory(os.path.join(app.root_path, 'static'),

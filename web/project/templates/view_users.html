@@ -24,8 +24,8 @@
             <td><a href="{{ url_for('user.user_profile', id=user.id) }}"> {{ user.get_username() }} </a></td>
             <td> {{ user.role }} </td>
             <td> {{ user.api_key }} </td>
-            <td> {{ user.registered_on }} </td>
-            <td> {{ user.current_logged_in }} </td>
+            <td> {{ user.registered_on | datetime }} </td>
+            <td> {{ user.current_logged_in | datetime }} </td>
           </tr>
         {% endfor %}
       </tbody>

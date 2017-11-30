@@ -33,12 +33,8 @@
       <div class="panel panel-info">
         <div class="panel-heading">Info</div>
         <div class="panel-body">api key: {{user.api_key}}</div>
-        <div class="panel-body">Inserted on: {{ user.registered_on.strftime("%A %B %d, %Y") }}</div>
-        {% if user.current_logged_in != None %}
-        <div class="panel-body">Last login: {{ user.current_logged_in.strftime("%A %B %d, %Y") }}</div>
-        {% else %}
-        <div class="panel-body">Never logged in</div>
-        {% endif %}
+        <div class="panel-body">Inserted on: {{ user.registered_on | datetime }}</div>
+        <div class="panel-body">Last login: {{ user.current_logged_in | datetime }}</div>
       </div>
     </div>
   </div>
