@@ -12,9 +12,14 @@ user_api_blueprint = Blueprint('user_api', __name__)
 
 @user_api_blueprint.route('/api/v1/api_key_reset', methods=["POST"])
 def api_key_reset():
+    if not user_exists(current_user):
+        abort(401)
     current_user.refresh_login()
     current_user.regenerate_api_key()
     db.session.add(current_user)
     db.session.commit()
     res = {'api_key': current_user.api_key}
     return jsonify(res)
+
+def user_exists(user):
+    return hasattr(user, 'id')
