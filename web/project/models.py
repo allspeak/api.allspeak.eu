@@ -7,6 +7,8 @@ import bleach
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 import uuid
 
+format="%Y-%m-%d %H:%M:%S"
+
 class TrainingSession(db.Model):
 
     __tablename__ = "training_session"
@@ -176,8 +178,14 @@ class Device(db.Model):
             'version': self.version,
             'platform': self.platform,
             'user_id': self.user_id,
-            'registered_on': self.registered_on
+            'registered_on': self.get_registered_on_str()
         }
 
     def get_url(self):
         return url_for('user_api.get_device', uuid=self.uuid, _external=True)
+
+    def get_registered_on_str(self):
+        if self.registered_on is None:
+            return None
+        else:
+            return self.registered_on.strftime(format)
