@@ -87,9 +87,7 @@ def add_training_session():
         train.train_net(session_uid,
                     modeltype, commands_ids, str_proc_scheme, True)
 
-    return jsonify({
-        'session_uid': session_uid
-    })
+    return jsonify({'session_uid': session_uid}), 201, {'Location': training_session.get_url()}
 
 
 @training_api_blueprint.route('/api/v1/training-sessions/<session_uid>', methods=['GET'])
@@ -99,6 +97,9 @@ def get_training_session(session_uid):
         abort(404)
 
     training_session = TrainingSession.query.filter_by(session_uid=session_uid).first()
+
+    if training_session is None:
+        abort(404)
 
     if not access_allowed(training_session, current_user):
         abort(401)

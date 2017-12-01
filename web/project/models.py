@@ -35,6 +35,9 @@ class TrainingSession(db.Model):
             'created_on': self.created_on
         }
 
+    def get_url(self):
+        return url_for('training_api.get_training_session', session_uid=self.session_uid, _external=True)
+
 
 
 class User(db.Model):
