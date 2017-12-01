@@ -88,7 +88,7 @@ def add_training_session():
                     modeltype, commands_ids, str_proc_scheme, True)
 
     return jsonify({
-        'training_session_id': session_uid
+        'session_uid': session_uid
     })
 
 
