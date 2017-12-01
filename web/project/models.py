@@ -12,7 +12,7 @@ class TrainingSession(db.Model):
     __tablename__ = "training_session"
 
     id = db.Column(db.Integer, primary_key=True)
-    session_uid = db.Column(db.Integer, default=None, nullable=True, unique=True)
+    session_uid = db.Column(db.String, nullable=False, unique=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     completed = db.Column(db.Boolean, default=False, nullable=False)
     created_on = db.Column(db.DateTime, nullable=True)
