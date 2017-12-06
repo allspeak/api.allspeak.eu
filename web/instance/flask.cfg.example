@@ -17,11 +17,11 @@ WTF_CSRF_ENABLED = True
 DEBUG = True
 
 # SQLAlchemy
-POSTGRES_DEFAULT_USER = 'postgres'
-POSTGRES_USER = 'infopoint'
-POSTGRES_PASSWORD = 'infopoint'
-POSTGRES_DB = 'infopoint'
-SQLALCHEMY_DATABASE_URI = 'postgresql://' + POSTGRES_USER + ':' + POSTGRES_PASSWORD + '@postgres:5432/' + POSTGRES_DB
+POSTGRES_DEFAULT_USER = 'apiallspeakeu'
+POSTGRES_USER = 'apiallspeakeu'
+POSTGRES_PASSWORD = 'apiallspeakeu'
+POSTGRES_DB = 'apiallspeakeu'
+SQLALCHEMY_DATABASE_URI = 'postgresql://' + POSTGRES_USER + ':' + POSTGRES_PASSWORD + '@apiallspeakeudb:5432/' + POSTGRES_DB
 SQLALCHEMY_TRACK_MODIFICATIONS = True
 
 # Bcrypt algorithm hashing rounds
