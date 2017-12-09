@@ -5,7 +5,8 @@ from markdown import markdown
 from flask import url_for
 import bleach
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-import uuid
+import random
+import string
 
 format="%Y-%m-%d %H:%M:%S"
 
@@ -133,7 +134,14 @@ class User(db.Model):
         return '<User {}>'.format(self.email)
 
     def regenerate_api_key(self):
-        self.api_key = uuid.uuid1()
+        tempkey = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(app.config['NDIGITS_APIKEY']))
+        user = User.query.filter(User.api_key == tempkey).first()
+        if user is None:
+            self.api_key = tempkey
+            #self.api_key = uuid.uuid1()
+            return        
+        else:
+            return self.regenerate_api_key()
 
     def refresh_login(self):
         self.last_logged_in = self.current_logged_in
