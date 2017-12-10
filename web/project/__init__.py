@@ -16,6 +16,7 @@ from flask_httpauth import HTTPBasicAuth
 import requests
 import traceback
 from .exceptions import RequestException
+from flask_cors import CORS, cross_origin
 
 
 ################
@@ -25,7 +26,7 @@ from .exceptions import RequestException
 app = Flask(__name__, instance_relative_config=True)
 
 app.config.from_pyfile('flask.cfg')
-
+CORS(app)
 def format_datetime(value):
     format="%Y-%m-%d %H:%M:%S"
     if value is None:
