@@ -137,7 +137,7 @@ All known errors cause the resource to return HTTP error code header together wi
     ],
     "nContextFrames": 5,
     "nInputParams": 792,
-    "nItemsToRecognize": 23,
+    "nItems2Recognize": 23,
     "nModelType": 275,
     "nProcessingScheme": 252,
     "sCreationTime": "2017/12/01 10:45:57",

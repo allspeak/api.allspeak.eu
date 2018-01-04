@@ -28,6 +28,9 @@ training_api_blueprint = Blueprint('training_api', __name__)
 # - modeltype (fine tune init net  OR  new net)
 
 
+#============================================================================================
+# web api
+#============================================================================================
 @training_api_blueprint.route('/api/v1/training-sessions', methods=['POST'])
 def add_training_session():
 
@@ -135,7 +138,7 @@ def get_training_session(session_uid):
            'nModelType': session_data['nModelType'],
            'nInputParams': train_data['nInputParams'],
            'nContextFrames': train_data['nContextFrames'],
-           'nItemsToRecognize': nitems,
+           'nItems2Recognize': nitems,
            'sModelFileName': output_net_name,
            'sInputNodeName': train_data['sInputNodeName'],
            'sOutputNodeName': train_data['sOutputNodeName'],
@@ -175,8 +178,13 @@ def get_training_session_network(session_uid):
     else:
         abort(404)
 
+
+#============================================================================================
+# accessory
+#============================================================================================
 def access_allowed(training_session, user):
     return training_session.user_id is None or (user_exists(user) and training_session.user_id == user.id)
 
 def user_exists(user):
     return hasattr(user, 'id')
+#============================================================================================
