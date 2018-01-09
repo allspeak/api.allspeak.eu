@@ -8,7 +8,7 @@ Returns detailed information of a single device.
 ***
 
 ## Requires authentication
-* A valid API Key must be provided in **api_key** HTTP header.
+* A valid API Key must be provided in **api-key** HTTP header.
 ***
 
 ## Parameters

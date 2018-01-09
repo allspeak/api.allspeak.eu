@@ -138,7 +138,6 @@ class User(db.Model):
         user = User.query.filter(User.api_key == tempkey).first()
         if user is None:
             self.api_key = tempkey
-            #self.api_key = uuid.uuid1()
             return        
         else:
             return self.regenerate_api_key()

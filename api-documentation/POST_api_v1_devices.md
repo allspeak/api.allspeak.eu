@@ -8,7 +8,7 @@ Creates a new device or update the already existing one with the input **uuid**.
 ***
 
 ## Requires authentication
-* A valid API Key must be provided in **api_key** HTTP header.
+* A valid API Key must be provided in **api-key** HTTP header.
 ***
 
 ## Parameters

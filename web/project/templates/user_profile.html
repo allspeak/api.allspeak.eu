@@ -26,13 +26,13 @@
         </div>
         {% endif %}
         <div class="panel-body">
-          <a href="{{ url_for('user.api_key_reset', id=user.id) }}">Reset api key</a>
+          <a href="{{ url_for('user.api_key_reset', id=user.id) }}">Reset api-key</a>
         </div>
       </div>
 
       <div class="panel panel-info">
         <div class="panel-heading">Info</div>
-        <div class="panel-body">api key: {{user.api_key}}</div>
+        <div class="panel-body">api-key: {{user.api_key}}</div>
         <div class="panel-body">Inserted on: {{ user.registered_on | datetime }}</div>
         <div class="panel-body">Last login: {{ user.current_logged_in | datetime }}</div>
       </div>
