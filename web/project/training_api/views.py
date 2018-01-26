@@ -132,6 +132,7 @@ def get_training_session(session_uid):
         train_data['sModelFileName'], session_uid, session_data['nProcessingScheme'])
 
     # create return JSON
+    # bLoaded, fRecognitionThreshold, nDataDest, AssetManager are not sent back
     nw = datetime.now()
     res = {'status': 'complete',
            'sLabel': session_data['sLabel'],
