@@ -65,7 +65,7 @@ def load_user(user_id):
 
 @login_manager.request_loader
 def load_user_from_request(request):
-    api_key = request.headers.get('api_key')
+    api_key = request.headers.get('api-key')
     if api_key is None:
         return None
     user = User.query.filter(User.api_key == api_key).first()

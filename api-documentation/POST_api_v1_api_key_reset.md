@@ -8,7 +8,7 @@ Reset the **API key** to a new random **API key**.
 ***
 
 ## Requires authentication
-* A valid API Key must be provided in **api_key** HTTP header.
+* A valid API Key must be provided in **api-key** HTTP header.
 ***
 
 ## Parameters
@@ -18,7 +18,7 @@ Reset the **API key** to a new random **API key**.
 ## Return format
 A JSON object with the following format:
 
-= **api_key** - The new **API key**
+= **api-key** - The new **API key**
 
 ***
 
@@ -41,5 +41,5 @@ All known errors cause the resource to return HTTP error code header together wi
 
 ``` json
 {
-	"api_key": "89698084-d5f8-11e7-8b79-0242ac1f0004"
+	"api-key": "89698084-d5f8-11e7-8b79-0242ac1f0004"
 }

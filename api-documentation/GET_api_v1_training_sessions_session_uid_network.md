@@ -8,7 +8,7 @@ Returns the trained network for the session
 ***
 
 ## Requires authentication
-* A valid API Key must be provided in **api_key** HTTP header.
+* A valid API Key must be provided in **api-key** HTTP header.
 * An guest training session can be accessed without providing an API key.
 ***
 

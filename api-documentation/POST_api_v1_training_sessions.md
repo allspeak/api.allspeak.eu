@@ -8,7 +8,7 @@ Create a new training_session
 ***
 
 ## Requires authentication
-* A valid API Key must be provided in **api_key** HTTP header.
+* A valid API Key must be provided in **api-key** HTTP header.
 * An guest training session can be created without providing an API key.
 ***
 

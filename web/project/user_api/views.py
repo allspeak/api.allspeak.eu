@@ -18,7 +18,7 @@ def api_key_reset():
     current_user.regenerate_api_key()
     db.session.add(current_user)
     db.session.commit()
-    res = {'api_key': current_user.api_key}
+    res = {'api-key': current_user.api_key}
     return jsonify(res)
 
 @user_api_blueprint.route('/api/v1/devices/<string:uuid>', methods=["GET"])
