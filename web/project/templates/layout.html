@@ -87,16 +87,16 @@
     <div class="content ">
 
       <!-- flash messages -->
-      {% for error_message in get_flashed_messages(category_filter=["error "]) %}
+      {% for error_message in get_flashed_messages(category_filter=["error"]) %}
       <div class="alert alert-danger alert-dismissible ">{{ error_message }}</div>
-      {% endfor %} {% for success_message in get_flashed_messages(category_filter=["success "]) %}
+      {% endfor %} {% for success_message in get_flashed_messages(category_filter=["success"]) %}
       <div class="alert alert-success alert-dismissible ">{{ success_message }}</div>
-      {% endfor %} {% for info_message in get_flashed_messages(category_filter=["info "]) %}
+      {% endfor %} {% for info_message in get_flashed_messages(category_filter=["info"]) %}
       <div class="alert alert-info alert-dismissible ">{{ info_message }}</div>
       {% endfor %}
 
       <!--
-        {% for debug_message in get_flashed_messages(category_filter=["debug "]) %}
+        {% for debug_message in get_flashed_messages(category_filter=["debug"]) %}
           <div class="alert alert-info alert-dismissible ">{{ debug_message }}</div>
         {% endfor %}
 -->
