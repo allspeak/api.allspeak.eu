@@ -3,6 +3,7 @@ nbproject/
 .idea/
 web/instance/flask.cfg
 web/project/data/*
+web/project/versions/*
 !web/project/data/.gitkeep
 /nbproject
 __pycache__/
