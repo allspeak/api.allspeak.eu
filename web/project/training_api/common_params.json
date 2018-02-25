@@ -1,6 +1,6 @@
 {"nInputParams":792,
 "nContextFrames":5,
-"sModelFileName":"user",
+"sModelFileName":"default",
 "sInputNodeName":"inputs/I",
 "sOutputNodeName":"SMO",
 "fRecognitionThreshold":0.1,

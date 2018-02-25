@@ -502,8 +502,8 @@ def fineTuning(subj, commands_list, input_model_name, training_repetitions_list,
 
 
 # send all data to training, does not create any test data.
-# : inputdata_folder. folder containing ctx_xxxxxx.dat files
-# : output_net_path. where to save the FT NET
+# : inputdata_folder. folder containing ctx_xxxxxx.dat files    : project/data/sessionid/data
+# : output_net_path. where to save the FT NET                   : project/data/sessionid/data/net
 # : output_net_name. name of the output pb file
 #def fineTuningFolderOnlyTrain(inputdata_folder, commands_list, input_model_path, output_net_path, output_net_name, clean_folder=True, hm_epochs=20, batch_size=100, ftnet_vars_name="fine_tuning_weights"):
 def fineTuningFolderOnlyTrain(inputdata_folder, commands_list, output_net_path, output_net_name, train_data, clean_folder=True):
@@ -520,21 +520,18 @@ def fineTuningFolderOnlyTrain(inputdata_folder, commands_list, output_net_path, 
     ncommands = len(commands_list)
 
     if os.path.isdir(output_net_path) is False:
-        os.mkdir(output_net_path)
+        os.mkdir(output_net_path)       # project/data/sessionid/data/net
 
     # -------------------------------------------------------------------
-    # create subjects' matrix
-    training_matrices_output = createSubjectTrainingMatrix("", inputdata_folder, output_net_path, commands_list, range(0, 25))
+    # create subjects' matrix                        project/data/sessionid/data  project/data/sessionid/data/net
+    training_matrices_output = createSubjectTrainingMatrix("", inputdata_folder, output_net_path, commands_list, range(0, 250))
 
     train_data_matrix = training_matrices_output['mat_compl']
     train_label_matrix = training_matrices_output['mat_lab']
 
-    # train_data_matrix = genfromtxt(training_matrices_output['matrices_path'] + "/" + "user" + "_train_data.dat")
-    # train_label_matrix = genfromtxt(training_matrices_output['matrices_path'] + "/" + "user" + "_train_labels.dat")
-
+    # prepare data
     Nexe = train_data_matrix.shape[0]
     ninputdata_len = len(train_data_matrix[0])
-
 
     graph = freeze.load(init_net_path)
 
@@ -572,7 +569,7 @@ def fineTuningFolderOnlyTrain(inputdata_folder, commands_list, output_net_path, 
 
 def train_net(training_sessionid, modeltype, commands_ids, str_proc_scheme, clean_folder=True):
     
-    folder_path = os.path.join('project', 'data', str(training_sessionid))
+    folder_path = os.path.join('project', 'data', str(training_sessionid))  # project/data/sessionid
     
     if modeltype == 274:
         trainparams_json = os.path.join('project', 'training_api', 'train_params.json')    

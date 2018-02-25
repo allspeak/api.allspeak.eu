@@ -41,6 +41,18 @@ def favicon():
     return send_from_directory(os.path.join(app.root_path, 'static'),
                                'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
+# expose update xml file
+@app.route('/stableupdate.xml')
+def stableupdate():
+    return send_from_directory(os.path.join(app.root_path, 'versions'),
+                               'stableupdate.xml', mimetype='text/xml')
+
+# expose current stable apk
+@app.route('/allspeak.apk')
+def stableapk():
+    return send_from_directory(os.path.join(app.root_path, 'versions'),
+                               'allspeak.apk', mimetype='application/vnd.android.package-archive')
+
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 pagedown = PageDown(app)

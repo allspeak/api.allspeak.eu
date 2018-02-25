@@ -17,6 +17,18 @@ training_api_blueprint = Blueprint('training_api', __name__)
 
 # the root path is : /home/flask/app/web
 
+#============================================================================================
+# web api
+
+
+#============================================================================================
+# TRAIN FEATURES
+#============================================================================================
+
+# receive a features' zip & train them:
+#
+# define an unique : session_uid
+
 # I create          data/training_sessionid/data/matrices
 # I copy zip to     data/training_sessionid/data.zip
 # I unzip to        data/training_sessionid/data
@@ -26,11 +38,8 @@ training_api_blueprint = Blueprint('training_api', __name__)
 # - processing scheme
 # - commands list
 # - modeltype (fine tune init net  OR  new net)
-
-
-#============================================================================================
-# web api
-#============================================================================================
+#
+# calls : train.train_net(session_uid, modeltype, commands_ids, str_proc_scheme, True)
 @training_api_blueprint.route('/api/v1/training-sessions', methods=['POST'])
 def add_training_session():
 
@@ -92,7 +101,14 @@ def add_training_session():
 
     return jsonify({'session_uid': session_uid}), 201, {'Location': training_session.get_url()}
 
-
+#============================================================================================
+# CHECK TRAIN COMPLETION
+#============================================================================================
+# returns:
+# - 'status': 'pending' 
+# or
+# - json with the created net
+#
 @training_api_blueprint.route('/api/v1/training-sessions/<session_uid>', methods=['GET'])
 def get_training_session(session_uid):
     session_path = os.path.join('project', 'data', str(session_uid))
@@ -143,6 +159,7 @@ def get_training_session(session_uid):
            'sModelFileName': output_net_name,
            'sInputNodeName': train_data['sInputNodeName'],
            'sOutputNodeName': train_data['sOutputNodeName'],
+           'fRecognitionThreshold': train_data['fRecognitionThreshold'],           
            'sLocalFolder': session_data['sLocalFolder'],
            'nProcessingScheme': session_data['nProcessingScheme'],
            'sCreationTime': nw.strftime('%Y/%m/%d %H:%M:%S'),
@@ -154,7 +171,9 @@ def get_training_session(session_uid):
 
     return jsonify(res)
 
-
+#============================================================================================
+# REQUEST NET TO DOWNLOAD
+#============================================================================================
 @training_api_blueprint.route('/api/v1/training-sessions/<session_uid>/network', methods=['GET'])
 def get_training_session_network(session_uid):
     directory_name = os.path.join(app.root_path, 'data', str(session_uid))
@@ -178,7 +197,6 @@ def get_training_session_network(session_uid):
         return send_file(filepath, attachment_filename=attachment_filename)
     else:
         abort(404)
-
 
 #============================================================================================
 # accessory
