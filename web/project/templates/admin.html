@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+{% from "_form_macros.html" import render_field_without_label %}
+
+{% block content %}
+
+<div>
+  <div class="page-header">
+    <h2>Admin</h2>
+  </div>
+  <div>
+    <a class="btn btn-sm btn-link" href="{{ url_for('admin.mobile_application_latest') }}">Latest Mobile Application</a>
+  </div>
+    
+  <div>
+    <a class="btn btn-sm btn-link" href="{{ url_for('admin.mobile_application_new') }}">New Mobile Application</a>
+  </div>
+</div>
+
+{% endblock %}

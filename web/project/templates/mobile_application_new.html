@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+{% from "_form_macros.html" import render_field %}
+
+{% block content %}
+
+<div>
+  <div class="page-header">
+    <h2>New Mobile Application</h2>
+  </div>
+  <form action="{{ url_for('admin.mobile_application_new') }}" method="POST" enctype="multipart/form-data">
+  {{ form.csrf_token }}
+    <dl>
+      {{ render_field(form.version, placeholder="Version Code") }}
+      {{ render_field(form.sver, placeholder="Version String") }}
+      {{ render_field(form.description, placeholder="Description") }}
+      {{ render_field(form.apk) }}
+    </dl>
+    <button class="btn btn-sm btn-success" type="submit">Create</button>
+  </form>
+</div>
+
+{% endblock %}

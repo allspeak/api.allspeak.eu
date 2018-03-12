@@ -8,3 +8,5 @@ web/project/versions/*
 /nbproject
 __pycache__/
 web/data/*
+web/instance/mobile_applications/*
+!web/instance/mobile_applications/.gitkeep

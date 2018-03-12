@@ -41,18 +41,6 @@ def favicon():
     return send_from_directory(os.path.join(app.root_path, 'static'),
                                'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
-# expose update xml file
-@app.route('/stableupdate.xml')
-def stableupdate():
-    return send_from_directory(os.path.join(app.root_path, 'versions'),
-                               'stableupdate.xml', mimetype='text/xml')
-
-# expose current stable apk
-@app.route('/allspeak.apk')
-def stableapk():
-    return send_from_directory(os.path.join(app.root_path, 'versions'),
-                               'allspeak.apk', mimetype='application/vnd.android.package-archive')
-
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 pagedown = PageDown(app)
@@ -91,11 +79,13 @@ def load_user_from_request(request):
 from project.training_api.views import training_api_blueprint
 from project.user.views import user_blueprint
 from project.user_api.views import user_api_blueprint
+from project.admin.views import admin_blueprint
 
 # register the blueprints
 app.register_blueprint(training_api_blueprint)
 app.register_blueprint(user_blueprint)
 app.register_blueprint(user_api_blueprint)
+app.register_blueprint(admin_blueprint)
 
 ############################
 #### custom error pages ####
