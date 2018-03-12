@@ -51,7 +51,9 @@ def add_training_session():
     print(session_uid)
 
     # check & prepare file system
-    session_path = os.path.join('project', 'data', str(session_uid))
+    #session_path = os.path.join('project', 'data', str(session_uid))
+    session_path = os.path.join(app.instance_path, 'train_data', str(session_uid))
+    
     if os.path.exists(session_path):
         msg = 'ERROR: training session %d already exist' % session_uid
         raise Exception(msg)
@@ -68,7 +70,7 @@ def add_training_session():
     with zipfile.ZipFile(file_path, "r") as zip_ref:
         zip_ref.extractall(data_path)
 
-    # copy json to ../ (data/training_sessionid), read it
+    # copy json to ../ (train_data/training_sessionid), read it
     src_json_filename = os.path.join(data_path, 'training.json')
     dest_json_filename = os.path.join(session_path, 'training.json')
     os.rename(src_json_filename, dest_json_filename)
@@ -111,6 +113,8 @@ def add_training_session():
 #
 @training_api_blueprint.route('/api/v1/training-sessions/<session_uid>', methods=['GET'])
 def get_training_session(session_uid):
+    
+    #session_path = os.path.join('project', 'data', str(session_uid))
     session_path = os.path.join('project', 'data', str(session_uid))
     if (not os.path.exists(session_path)):
         abort(404)
