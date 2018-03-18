@@ -22,8 +22,20 @@ from project.models import User
 
 for i in range(0, n):
     patient = User(role=User.PATIENT)
-
     db.session.add(patient)
+
+    # create user file system
+    userkey = patient.get_key()
+    user_path = os.path.join(os.curdir, 'instance', 'patients_data', userkey)
+
+    print(user_path)
+
+    wav_path = os.path.join(user_path, 'voicebank')
+    train_path = os.path.join(user_path, 'train_data')
+    recordings_path = os.path.join(user_path, 'recordings')
+    os.makedirs(wav_path)
+    os.makedirs(train_path)
+    os.makedirs(recordings_path)    
 
 db.session.commit()
 

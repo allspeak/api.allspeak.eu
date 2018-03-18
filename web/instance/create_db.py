@@ -4,7 +4,7 @@
 import sys
 import os
 
-print('Creating database tables for All Speak...')
+print('Creating database tables for AllSpeak...')
 
 if os.path.abspath(os.curdir) not in sys.path:
     sys.path.append(os.path.abspath(os.curdir))

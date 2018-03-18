@@ -16,6 +16,7 @@ class TrainingSession(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     session_uid = db.Column(db.String, nullable=False, unique=True)
+    model_type = db.Column(db.String, nullable=False, unique=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     completed = db.Column(db.Boolean, default=False, nullable=False)
     created_on = db.Column(db.DateTime, nullable=True)
@@ -104,6 +105,10 @@ class User(db.Model):
         """Requires use of Python 3"""
         return str(self.id)
 
+    def get_key(self):
+        """Return the api_key."""
+        return self.api_key
+
     def get_username(self):
         if self.role == User.PATIENT:
             return 'HSR_' + self.get_id().zfill(3)
@@ -116,7 +121,6 @@ class User(db.Model):
         else:
             return url_for('user.view_patients')
         
-
     def generate_auth_token(self, expires_in=3600):
         s = Serializer(app.config['SECRET_KEY'], expires_in=expires_in)
         return s.dumps({'id': self.id}).decode('utf-8')
