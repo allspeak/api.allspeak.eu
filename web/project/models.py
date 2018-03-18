@@ -21,9 +21,10 @@ class TrainingSession(db.Model):
     completed = db.Column(db.Boolean, default=False, nullable=False)
     created_on = db.Column(db.DateTime, nullable=True)
 
-    def __init__(self, session_uid, user_id=None):
+    def __init__(self, session_uid, model_type, user_id=None):
         self.user_id = user_id
         self.session_uid = session_uid
+        self.model_type = model_type
         self.completed = False
         self.created_on = datetime.now()  
     
@@ -33,6 +34,7 @@ class TrainingSession(db.Model):
             'id': self.id,
             'user_id': self.user_id,
             'session_uid': self.session_uid,
+            'model_type': self.model_type,
             'completed': self.completed,
             'created_on': self.created_on
         }
