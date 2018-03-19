@@ -43,7 +43,6 @@ class TrainingSession(db.Model):
         return url_for('training_api.get_training_session', session_uid=self.session_uid, _external=True)
 
 
-
 class User(db.Model):
 
     __tablename__ = "user"

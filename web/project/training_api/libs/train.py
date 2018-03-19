@@ -186,7 +186,7 @@ def trainExistingSubjects(subjects_list, output_model_name, train_data_input_mat
 #
 # return    :   output_matrices_path: path to the output folder
 # ===========================================================================================================================
-def createSubjectTrainingMatrix(subj, in_orig_subj_path, output_net_path, arr_commands, arr_rip):
+def createSubjectTrainingMatrix(subj, in_orig_subj_path, output_net_path, arr_commands, arr_rip, data_prefix="ctx"):
     mat_compl = []
     mat_lab = []
     output_matrices_path = os.path.join(in_orig_subj_path, 'matrices')
@@ -194,7 +194,7 @@ def createSubjectTrainingMatrix(subj, in_orig_subj_path, output_net_path, arr_co
     if os.path.isdir(output_matrices_path) is False:
         os.mkdir(output_matrices_path)
 
-    for ctxfile in glob.glob(in_orig_subj_path + '/ctx*'):
+    for ctxfile in glob.glob(in_orig_subj_path + '/' + data_prefix + '*'):
         #print(ctxfile)
         spl = re.split('[_ .]', ctxfile)  # e.g. ctx_SUBJ_CMD_REP => spl2[2] num comando, spl[3] num ripetiz
         id_cmd = int(spl[2])
@@ -239,7 +239,7 @@ def createSubjectTrainingMatrix(subj, in_orig_subj_path, output_net_path, arr_co
 #               sentence_counter: text file which takes account of how many rows are occupied by each command and the command_id
 # ===========================================================================================================================
 
-def createSubjectTestMatrix(subj, in_orig_subj_path, output_net_path, arr_commands, arr_rip, sentences_filename, sentence_counter):
+def createSubjectTestMatrix(subj, in_orig_subj_path, output_net_path, arr_commands, arr_rip, sentences_filename, sentence_counter, data_prefix="ctx"):
     mat_compl = []
     mat_lab = []
     output_matrices_path = output_net_path + '/matrices'
@@ -250,7 +250,7 @@ def createSubjectTestMatrix(subj, in_orig_subj_path, output_net_path, arr_comman
     if os.path.isfile(sentences_filename) is True:
         os.remove(sentences_filename)
 
-    for ctxfile in glob.glob(in_orig_subj_path + '/ctx*'):
+    for ctxfile in glob.glob(in_orig_subj_path + '/' + data_prefix + '*'):
 
         spl = re.split('[_ .]', ctxfile)  # e.g. ctx_SUBJ_CMD_REP => spl2[2] num comando, spl[3] num ripetiz
         id_cmd = int(spl[2])
@@ -514,6 +514,12 @@ def fineTuningFolderOnlyTrain(inputdata_folder, commands_list, output_net_path, 
     sInputNodeName = train_data['sInputNodeName']   # inputs/I unused
     sOutputNodeName = train_data['sOutputNodeName'] # 
     init_net_path = train_data['init_net_path']     #
+    nContextFrames = train_data['nContextFrames']   # 
+
+    data_prefix = ""
+    if nContextFrames > 0:
+        data_prefix = 'ctx'
+
 
     session_dir = os.path.dirname(inputdata_folder)
     output_ftmodel_path = session_dir + "/optimized_" + output_net_name + ".pb"
@@ -524,7 +530,7 @@ def fineTuningFolderOnlyTrain(inputdata_folder, commands_list, output_net_path, 
 
     # -------------------------------------------------------------------
     # create subjects' matrix                        project/data/sessionid/data  project/data/sessionid/data/net
-    training_matrices_output = createSubjectTrainingMatrix("", inputdata_folder, output_net_path, commands_list, range(0, 250))
+    training_matrices_output = createSubjectTrainingMatrix("", inputdata_folder, output_net_path, commands_list, range(0, 250), data_prefix)
 
     train_data_matrix = training_matrices_output['mat_compl']
     train_label_matrix = training_matrices_output['mat_lab']
@@ -566,27 +572,32 @@ def fineTuningFolderOnlyTrain(inputdata_folder, commands_list, output_net_path, 
             if clean_folder is True:
                 shutil.rmtree(inputdata_folder)  # /matrices is defined in createSubjectMatrix
 
-
+# =========================================================================================================================
+# =========================================================================================================================
+# entry point of all trainings (called by views.py : @training_api_blueprint.route('/api/v1/training-sessions')
+# =========================================================================================================================
+# =========================================================================================================================
 def train_net(training_sessionid, modeltype, commands_ids, str_proc_scheme, clean_folder=True):
     
     folder_path = os.path.join('project', 'data', str(training_sessionid))  # project/data/sessionid
     
     if modeltype == 274:
-        trainparams_json = os.path.join('project', 'training_api', 'train_params.json')    
-    else:
-        trainparams_json = os.path.join('project', 'training_api', 'ft_train_params.json')
-    
-    print(os.getcwd())
-    #a = os.path.join('project', 'training_api', 'train_params.json')
-    print(trainparams_json)
-    
-    #os.path.join('project', 'training_api', 'train_params.json')
+        trainparams_json = os.path.join('project', 'training_api', 'pure_user_trainparams.json')
+    elif modeltype == 275:
+        trainparams_json = os.path.join('project', 'training_api', 'pure_user_adapted_trainparams.json')    
+    elif modeltype == 276:
+        trainparams_json = os.path.join('project', 'training_api', 'common_adapted_trainparams.json')    
+    elif modeltype == 277:
+        trainparams_json = os.path.join('project', 'training_api', 'user_readapted_trainparams.json')  
 
+    #print(os.getcwd())
+    #print(trainparams_json)
 
     with open(trainparams_json, 'r') as data_file:
         train_data = json.load(data_file)
 
-    print(train_data['nContextFrames'])
+    #print(train_data['nContextFrames'])
+
     ctx_frames = train_data['nContextFrames']           # 
     sModelFileName = train_data['sModelFileName']   # 
 
@@ -596,11 +607,14 @@ def train_net(training_sessionid, modeltype, commands_ids, str_proc_scheme, clea
 
 
     # CONTEXTING DATA (create ctx_...  files)
-    context.createSubjectContext(data_path, ctx_frames)
+    if ctx_frames > 0:
+        context.createSubjectContext(data_path, ctx_frames)
 
     if modeltype == 274:
         fineTuningFolderOnlyTrain(data_path, commands_ids, output_net_path, output_net_name, train_data, clean_folder)
-    else:
+    elif modeltype == 275 or modeltype == 276:
+        fineTuningFolderOnlyTrain(data_path, commands_ids, output_net_path, output_net_name, train_data, clean_folder)  
+    elif modeltype == 277:
         fineTuningFolderOnlyTrain(data_path, commands_ids, output_net_path, output_net_name, train_data, clean_folder)
 
     print('tuning done')

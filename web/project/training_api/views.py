@@ -47,13 +47,15 @@ def add_training_session():
         msg = 'ERROR: no file in request'
         raise RequestException(msg)
 
+    userkey = current_user.get_key()
     session_uid = uuid.uuid1()
-    print(session_uid)
 
     # check & prepare file system
     #session_path = os.path.join('project', 'data', str(session_uid))
-    session_path = os.path.join(app.instance_path, 'train_data', str(session_uid))
-    
+    session_path = os.path.join(app.instance_path, 'patients_data', userkey, 'train_data', str(session_uid))
+
+    print(session_path)
+
     if os.path.exists(session_path):
         msg = 'ERROR: training session %d already exist' % session_uid
         raise Exception(msg)
@@ -85,7 +87,7 @@ def add_training_session():
     commands_ids = [cmd['id'] for cmd in commands]
     str_proc_scheme = str(train_data['nProcessingScheme'])  # 252/253/254/255
 
-    training_session = TrainingSession(session_uid)
+    training_session = TrainingSession(session_uid, modeltype)
     if user_exists(current_user):
         training_session.user_id = current_user.id
     db.session.add(training_session)
