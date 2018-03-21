@@ -26,6 +26,7 @@ neuro_password = '1234'
 n_patients = 5
 
 common_net_type = 273
+preproc_type = 252
 
 recreate_filesystem = True
 # ----------------------------------------------------------------------------------------------------------------
@@ -80,7 +81,7 @@ admin_id = admin.id
 dest_commonnet_path = os.path.join(admin.get_userpath(), 'train_data', str(session_uid))
 os.makedirs(dest_commonnet_path)
 
-training_session = TrainingSession(session_uid, common_net_type, admin_id)
+training_session = TrainingSession(session_uid, common_net_type, preproc_type, admin_id)
 training_session.net_path = os.path.join(dest_commonnet_path, 'controls_fsc.pb')
 
 db.session.add(training_session)

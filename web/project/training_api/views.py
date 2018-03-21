@@ -80,9 +80,10 @@ def add_training_session():
 
     # get nModelType from submitted json
     modeltype = session_data['nModelType']
+    preproctype = session_data['nProcessingScheme']
 
     # add present session into the db
-    training_session = TrainingSession(session_uid, modeltype)
+    training_session = TrainingSession(session_uid, modeltype, preproctype)
     if user_exists(current_user):
         training_session.user_id = current_user.id
     db.session.add(training_session)
