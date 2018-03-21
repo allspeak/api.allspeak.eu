@@ -1,3 +1,3 @@
-## All Speak
+## AllSpeak
 
 [API documentation](api-documentation/README.md)

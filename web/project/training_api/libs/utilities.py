@@ -1,9 +1,17 @@
+# createSubjectTrainingMatrix(subj, in_orig_subj_path, output_net_path, arr_commands, arr_rip)
+# createSubjectTestMatrix(subj, in_orig_subj_path, output_net_path, arr_commands, arr_rip, sentences_filename, sentence_counter)
+# createFullMatrix(input_matrix_folder, data_name, label_name, output_matrix_path="")
+
 import os
 import shutil
 import ntpath
 import glob
 import re
 import json
+import numpy as np
+from numpy import genfromtxt
+from datetime import datetime
+from . import earray_wrapper
 
 def moveFolderContent(indir, outdir):
     for file in os.listdir(indir):
@@ -147,6 +155,8 @@ def renameSubjectsFilesJSON(subjects_name, inrootpath, outrootpath, jsonvocfilep
 
 
         # works when input files are : commandlabelNREP.dat.SUBJLABEL
+
+
 def renameSubjectFilesOld(subject_name, inrootpath, outrootpath, vocfilepath):
     inpath = inrootpath + '/' + subject_name
     outpath = outrootpath + '/' + subject_name
@@ -185,3 +195,298 @@ def createVocabularySentence(list_ids, json_inputfile, txt_outputfile):
                 break
     file.close()
 
+
+def createVocabularyJson(list_ids, model, sessiondata, json_globalvocabulary, json_outputfile):
+
+    # get commands list from json_globalvocabulary
+    vocabulary = getVocabularyFromJSON(json_globalvocabulary)
+    commands = []
+    for id in list_ids:
+        for sentence in vocabulary:
+            sentenceid = sentence["id"]
+            if id == sentenceid:
+                commands.append({'title': sentence["title"], 'id': sentenceid})
+                break
+    lencmds = len(commands)
+
+    nw = datetime.now()
+
+    # sModelFilePath is written by the App
+    res = {
+           'sLabel': sessiondata['sLabel'],
+           'nModelType': sessiondata['nModelType'],
+           'nInputParams': model['nInputParams'],
+           'nContextFrames': model['nContextFrames'],
+           'nItems2Recognize': lencmds,
+           'sModelFilePath': "",
+           'sModelFileName': model['sModelFileName'],
+           'sInputNodeName': model['sInputNodeName'],
+           'sOutputNodeName': model['sOutputNodeName'],
+           'nProcessingScheme': sessiondata['nProcessingScheme'],
+           'fRecognitionThreshold': model['fRecognitionThreshold'],
+           'sCreationTime': nw.strftime('%Y/%m/%d %H:%M:%S'),
+           'sLocalFolder': sessiondata['sLocalFolder'],
+           'commands': commands
+           }
+
+    with open(json_outputfile, 'w') as data_file:
+        json.dump(res, data_file)
+
+
+# ===========================================================================================================================
+# aims      :   This script creates the training matrix for a single subject (ctx_*.dat ==> SUBJ_train_data.npy [earray h5])
+#
+# input     :   subj: subject folder name
+#               in_orig_subj_path: path to the subject's cepstra with context
+#               output_net_path: path to the output folder
+#               arr_commands: IDs of the selected commands
+#               arr_rip: range from 0 to Nripetitions
+#
+# return    :   output_matrices_path: path to the output folder (e.g.  output/train/ANALYSISNAME/matrices)
+# ===========================================================================================================================
+def createSubjectTrainingMatrix(subj, in_orig_subj_path, output_net_path, arr_commands, arr_rip, file_prefix='ctx'):
+    mat_compl = []
+    mat_lab = []
+
+    totalsize = 0
+    output_matrices_path = os.path.join(output_net_path, 'matrices')
+
+    write_every_nfiles = 1     # every N (e.g. 10) files read, append them to disk and clear arrays
+
+    if os.path.isdir(output_matrices_path) is False:
+        os.mkdir(output_matrices_path)
+
+    if subj != '':
+        subj = subj + "_"
+
+    output_data_matrix_path = output_matrices_path + '/' + subj + 'train_data.npy'
+    output_labels_matrix_path = output_matrices_path + '/' + subj + 'train_labels.npy'
+
+    if os.path.exists(output_data_matrix_path) is True:
+        os.remove(output_data_matrix_path)
+
+    if os.path.exists(output_labels_matrix_path) is True:
+        os.remove(output_labels_matrix_path)
+
+    try:
+        cnt = 0
+        for ctxfile in glob.glob(in_orig_subj_path + '/' + file_prefix + '*'):
+
+            spl = re.split('[_ .]', ctxfile)  # e.g. ctx_SUBJ_CMD_REP => spl2[2] num comando, spl[3] num ripetiz
+            id_cmd = int(spl[2])
+            id_rep = int(spl[3])
+
+            if id_cmd in arr_commands and id_rep in arr_rip:
+
+                f = open(ctxfile, 'r')
+                lines = f.readlines()
+                count_lines = len(lines)
+                f.close()
+
+                # for every line of contexted file, write N-arr_commands columns
+                lb = [[1 if i == id_cmd else 0 for i in arr_commands] for j in range(count_lines)]
+                ctx = genfromtxt(ctxfile)  # load dei cepstra
+
+                if len(mat_compl) == 0 and len(mat_lab) == 0:
+                    mat_compl = ctx
+                    mat_lab = lb
+                else:
+                    mat_compl = np.vstack((mat_compl, ctx))
+                    mat_lab = np.vstack((mat_lab, lb))
+                cnt = cnt + 1
+
+                # check whether write 2 disk
+                if cnt == write_every_nfiles:
+                    cnt = 0
+                    earray_wrapper.appendArray2File(mat_compl, output_data_matrix_path)
+                    earray_wrapper.appendArray2File(mat_lab, output_labels_matrix_path)
+                    totalsize += mat_compl.size
+                    mat_compl = []
+                    mat_lab = []
+
+    except Exception as e:
+        print(str(e))
+
+    # save data in output/train/ANALYSISNAME/matrices
+    if len(mat_compl):
+        earray_wrapper.appendArray2File(mat_compl, output_data_matrix_path)
+        earray_wrapper.appendArray2File(mat_lab, output_labels_matrix_path)
+    print("createSubjectTrainingMatrix ended: " + str(totalsize))
+
+    return {'data_matrices_path': output_data_matrix_path, 'labels_matrices_path': output_labels_matrix_path}
+
+# -----------------------------------------------------------------------------------------------------------------------
+# DO NOT create matrices file, just read and returns the data & labels arrays
+def getSubjectTrainingMatrix(in_orig_subj_path, arr_commands, arr_rip, file_prefix='ctx'):
+
+    mat_compl = []
+    mat_lab = []
+    totalsize = 0
+    try:
+        cnt = 0
+        for ctxfile in glob.glob(in_orig_subj_path + '/' + file_prefix + '*'):
+
+            spl = re.split('[_ .]', ctxfile)  # e.g. ctx_SUBJ_CMD_REP => spl2[2] num comando, spl[3] num ripetiz
+            id_cmd = int(spl[2])
+            id_rep = int(spl[3])
+
+            if id_cmd in arr_commands and id_rep in arr_rip:
+
+                f = open(ctxfile, 'r')
+                lines = f.readlines()
+                count_lines = len(lines)
+                f.close()
+
+                # for every line of contexted file, write N-arr_commands columns
+                lb = [[1 if i == id_cmd else 0 for i in arr_commands] for j in range(count_lines)]
+                ctx = genfromtxt(ctxfile)  # load dei cepstra
+
+                if len(mat_compl) == 0 and len(mat_lab) == 0:
+                    mat_compl = ctx
+                    mat_lab = lb
+                else:
+                    mat_compl = np.vstack((mat_compl, ctx))
+                    mat_lab = np.vstack((mat_lab, lb))
+                cnt = cnt + 1
+
+    except Exception as e:
+        print(str(e))
+
+    print("createSubjectTrainingMatrix ended: " + str(totalsize))
+
+    return {'data_matrices': mat_compl, 'labels_matrices': mat_lab}
+
+
+# ===========================================================================================================================
+# aims      :   This script creates the testing matrix for a single subject
+#
+# input     :   subj: subject folder name
+#               in_orig_subj_path: path to the subject's cepstra with context
+#               output_net_path: path to the output folder
+#               arr_commands: range from 1 to Ncommands
+#               arr_rip: range from 0 to Nripetitions
+#               sentences_filename: name of the output file
+#               sentence_counter: it takes account of how many rows are occupied by each command and the command_id
+#
+# return    :   output_matrices_path: path to the output folder
+#               sentence_counter: text file which takes account of how many rows are occupied by each command and the command_id
+# ===========================================================================================================================
+def createSubjectTestMatrix(subj, in_orig_subj_path, output_net_path, arr_commands, arr_rip, sentences_filename, sentence_counter):
+    mat_compl = []
+    mat_lab = []
+
+    totalsize = 0
+    output_matrices_path = os.path.join(output_net_path, 'matrices')
+
+    write_every_nfiles = 10     # every N (e.g. 10) files read, append them to disk and clear arrays
+
+    if os.path.isdir(output_matrices_path) is False:
+        os.mkdir(output_matrices_path)
+
+    if os.path.isfile(sentences_filename) is True:
+        os.remove(sentences_filename)
+
+    output_data_matrix = output_matrices_path + '/' + subj + '_test_data.npy'
+    output_labels_matrix = output_matrices_path + '/' + subj + '_test_labels.npy'
+
+    if os.path.exists(output_data_matrix) is True:
+        os.remove(output_data_matrix)
+
+    if os.path.exists(output_labels_matrix) is True:
+        os.remove(output_labels_matrix)
+
+    try:
+        cnt = 0
+        for ctxfile in glob.glob(in_orig_subj_path + '/ctx*'):
+
+            spl = re.split('[_ .]', ctxfile)  # e.g. ctx_SUBJ_CMD_REP => spl2[2] num comando, spl[3] num ripetiz
+            id_cmd = int(spl[2])
+            id_rep = int(spl[3])
+
+            if id_cmd in arr_commands and id_rep in arr_rip:
+
+                f = open(ctxfile, 'r')
+                lines = f.readlines()
+                count_lines = len(lines)
+                f.close()
+
+                sentence_counter = sentence_counter + 1
+                sc = [[sentence_counter, id_cmd] for j in range(count_lines)]
+                with open(output_net_path + "/" + sentences_filename, 'ab') as f_handle:
+                    np.savetxt(f_handle, sc, fmt='%.0f')
+
+                lb = [[1 if i == id_cmd else 0 for i in arr_commands] for j in range(count_lines)]
+                ctx = genfromtxt(ctxfile)  # load dei cepstra
+
+                if len(mat_compl) == 0 and len(mat_lab) == 0:
+                    mat_compl = ctx
+                    mat_lab = lb
+                else:
+                    mat_compl = np.vstack((mat_compl, ctx))
+                    mat_lab = np.vstack((mat_lab, lb))
+                cnt = cnt + 1
+
+                # check whether write 2 disk
+                if cnt == write_every_nfiles:
+                    cnt = 0
+                    earray_wrapper.appendArray2File(mat_compl, output_data_matrix)
+                    earray_wrapper.appendArray2File(mat_lab, output_labels_matrix)
+                    totalsize += mat_compl.size
+                    mat_compl = []
+                    mat_lab = []
+
+    except Exception as e:
+        print(str(e))
+
+    # save data in output/test/ANALYSISNAME/matrices
+    if len(mat_compl):
+        earray_wrapper.appendArray2File(mat_compl, output_data_matrix)
+        earray_wrapper.appendArray2File(mat_lab, output_labels_matrix)
+
+    return {'data_matrices_path': output_data_matrix, 'labels_matrices_path': output_labels_matrix, 'sentence_counter': sentence_counter}
+
+
+# ===========================================================================================================================
+# aims      :   This script creates the testing matrix with all the pre-established subjects
+#
+# input     :   input_matrix_folder: path to the subject's folder containing testing and training matrices with cepstra or labels
+#               data_name: name of the testing or training matrices with cepstra
+#               label_name: name of the testing or training matrices with labels
+#               output_matrix_path: path to the output folder. If is not specified, data will be stored in the current working folder
+#
+# return    :   data_matrix_path: path to the output folder
+#               label_matrix_path: path to the output folder
+# ===========================================================================================================================
+def createFullMatrix(subjects_list, input_net_folder, data_name, label_name, output_net_folder=""):
+
+    input_matrix_folder = os.path.join(input_net_folder, 'matrices')
+    if os.path.isdir(input_matrix_folder) is False:
+        os.mkdir(input_matrix_folder)
+
+    if len(output_net_folder):
+        output_matrix_folder = os.path.join(output_net_folder, 'matrices')
+        if os.path.isdir(output_matrix_folder) is False:
+            os.mkdir(output_matrix_folder)
+
+        data_matrix_path = output_matrix_folder + '/full_' + data_name + '.npy'
+        label_matrix_path = output_matrix_folder + '/full_' + label_name + '.npy'
+    else:
+        data_matrix_path = input_matrix_folder + '/full_' + data_name + '.npy'
+        label_matrix_path = input_matrix_folder + '/full_' + label_name + '.npy'
+
+    for file in glob.glob(input_matrix_folder + '/*' + data_name + '.npy'):
+        file_name = os.path.basename(file)
+
+        spl = re.split('[_ .]', file_name)  # spl[0] paz, spl[1] parola 'train'
+
+        for subj in subjects_list:
+            if subj == spl[0]:
+                print("createFullMatrix: " + file)
+
+                file_train = np.load(file)
+                file_labels = np.load(input_matrix_folder + '/' + spl[0] + '_' + label_name + '.npy')
+
+                earray_wrapper.appendArray2File(file_train, data_matrix_path)
+                earray_wrapper.appendArray2File(file_labels, label_matrix_path)
+
+    return {'data_matrix_path': data_matrix_path, 'label_matrix_path': label_matrix_path}

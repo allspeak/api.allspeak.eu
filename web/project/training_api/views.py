@@ -24,22 +24,20 @@ training_api_blueprint = Blueprint('training_api', __name__)
 #============================================================================================
 # TRAIN FEATURES
 #============================================================================================
-
 # receive a features' zip & train them:
 #
-# define an unique : session_uid
-
-# I create          data/training_sessionid/data/matrices
-# I copy zip to     data/training_sessionid/data.zip
-# I unzip to        data/training_sessionid/data
-# copy              data/training_sessionid/data/training.json => data/training_sessionid/training.json
+# OPERATIONS
+# get session & user IDs
+# check, prepare file system and get submitted file
+# => I create           instance/users_data/APIKEY/train_data/training_sessionid/data
+# save zip 
+# => I copy zip to      instance/users_data/APIKEY/train_data/training_sessionid/data.zip
+# => I extract zip to   instance/users_data/APIKEY/train_data/training_sessionid/data
+# copy json from        instance/..../training_sessionid/data => instance/..../training_sessionid/training.json
+# read from it the nModelType
+# add present session into the db
+# start training :      train.train_net(session_data, session_path, session_uid, voicebank_vocabulary_path, True)
 #
-# read from JSON the following:
-# - processing scheme
-# - commands list
-# - modeltype (fine tune init net  OR  new net)
-#
-# calls : train.train_net(session_uid, modeltype, commands_ids, str_proc_scheme, True)
 @training_api_blueprint.route('/api/v1/training-sessions', methods=['POST'])
 def add_training_session():
 
@@ -47,22 +45,22 @@ def add_training_session():
         msg = 'ERROR: no file in request'
         raise RequestException(msg)
 
+    # list of available commands
+    voicebank_vocabulary_path = os.path.join(app.instance_path, 'inputnet', 'voicebank_commands.json')
+
+    # get session & user IDs
     userkey = current_user.get_key()
     session_uid = uuid.uuid1()
-
-    # check & prepare file system
-    #session_path = os.path.join('project', 'data', str(session_uid))
-    session_path = os.path.join(app.instance_path, 'patients_data', userkey, 'train_data', str(session_uid))
-
+    
+    # check, prepare file system and get submitted file
+    session_path = os.path.join(app.instance_path, 'users_data', userkey, 'train_data', str(session_uid))
     print(session_path)
-
     if os.path.exists(session_path):
         msg = 'ERROR: training session %d already exist' % session_uid
         raise Exception(msg)
-    file = request.files['file']
-
     data_path = os.path.join(session_path, 'data')
     os.makedirs(data_path)
+    file = request.files['file']
 
     # save zip & extract it
     filename = secure_filename(file.filename)
@@ -78,30 +76,25 @@ def add_training_session():
     os.rename(src_json_filename, dest_json_filename)
 
     with open(dest_json_filename, 'r') as data_file:
-        train_data = json.load(data_file)
+        session_data = json.load(data_file)
 
-    # newnet or ft_initnet
-    modeltype = train_data['nModelType']
-    # list of commands id [1102, 1103, 1206, ...]
-    commands = train_data['commands']
-    commands_ids = [cmd['id'] for cmd in commands]
-    str_proc_scheme = str(train_data['nProcessingScheme'])  # 252/253/254/255
+    # get nModelType from submitted json
+    modeltype = session_data['nModelType']
 
+    # add present session into the db
     training_session = TrainingSession(session_uid, modeltype)
     if user_exists(current_user):
         training_session.user_id = current_user.id
     db.session.add(training_session)
     db.session.commit()
 
+    # start training
     parallel_execution = True
-
     if parallel_execution:
         executor = ThreadPoolExecutor(2)
-        executor.submit(train.train_net, session_uid,
-                    modeltype, commands_ids, str_proc_scheme, True)
+        executor.submit(train.train_net, session_data, session_path, session_uid, voicebank_vocabulary_path, True)
     else:
-        train.train_net(session_uid,
-                    modeltype, commands_ids, str_proc_scheme, True)
+        train.train_net(session_data, session_path, session_uid, voicebank_vocabulary_path, True)
 
     return jsonify({'session_uid': session_uid}), 201, {'Location': training_session.get_url()}
 
@@ -133,28 +126,31 @@ def get_training_session(session_uid):
         res = {'status': 'pending'}
         return jsonify(res)
 
+    # training completed
     session_json_filename = os.path.join(session_path, 'training.json')
     with open(session_json_filename, 'r') as data_file:
         session_data = json.load(data_file)
 
     modeltype = session_data['nModelType']
+
     if modeltype == 274:
-        trainparams_json = os.path.join(
-            'project', 'training_api', 'train_params.json')
-    else:
-        trainparams_json = os.path.join(
-            'project', 'training_api', 'ft_train_params.json')
+        trainparams_json = os.path.join('project', 'training_api', 'pure_user_trainparams.json')
+    elif modeltype == 275:
+        trainparams_json = os.path.join('project', 'training_api', 'pure_user_adapted_trainparams.json')    
+    elif modeltype == 276:
+        trainparams_json = os.path.join('project', 'training_api', 'common_adapted_trainparams.json')    
+    elif modeltype == 277:
+        trainparams_json = os.path.join('project', 'training_api', 'user_readapted_trainparams.json')  
 
     with open(trainparams_json, 'r') as data_file:
         train_data = json.load(data_file)
 
     nitems = len(session_data['commands'])
 
-    output_net_name = "optimized_%s_%s_%d.pb" % (
-        train_data['sModelFileName'], session_uid, session_data['nProcessingScheme'])
+    output_net_name = "optimized_%s_%s_%d.pb" % (train_data['sModelFileName'], session_uid, session_data['nProcessingScheme'])
 
     # create return JSON
-    # bLoaded, fRecognitionThreshold, nDataDest, AssetManager are not sent back
+    # bLoaded, nDataDest, AssetManager are not sent back
     nw = datetime.now()
     res = {'status': 'complete',
            'sLabel': session_data['sLabel'],
@@ -169,6 +165,7 @@ def get_training_session(session_uid):
            'sLocalFolder': session_data['sLocalFolder'],
            'nProcessingScheme': session_data['nProcessingScheme'],
            'sCreationTime': nw.strftime('%Y/%m/%d %H:%M:%S'),
+           'sessionid': str(session_uid),
            'commands': session_data['commands']
            }
 
