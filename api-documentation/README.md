@@ -1,4 +1,4 @@
-# All Speak API documentation
+# AllSpeak API documentation
 
 The APIs are versioned with a progressive number.
 

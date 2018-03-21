@@ -1,0 +1,43 @@
+{
+	"sLabel":"controls FSC 23",
+	"nModelType":273,
+	"nInputParams":792,
+	"nContextFrames":5,
+	"nItems2Recognize":23,
+	"sModelFilePath":"",
+	"sModelFileName":"controls_fsc.pb",
+	"sInputNodeName":"inputs/I",
+	"sOutputNodeName":"SMO",
+	"fRecognitionThreshold":0.1,
+	"nProcessingScheme":252,
+	"sCreationTime":"13092017",
+	"sLocalFolder":"default",
+	"sessionid": "",
+	"commands":
+	[
+		{ "title": "Chiama", "id": 1305},
+		{ "title": "Ciao", "id": 1404},
+		{ "title": "Ci vediamo domani", "id": 1405},
+		{ "title": "Come stai?", "id": 1616},
+		{ "title": "Devo andare in bagno", "id": 1208},
+		{ "title": "Grazie", "id": 1400},
+		{ "title": "Ho bisogno di lavarmi", "id": 1211},
+		{ "title": "Ho caldo", "id": 1203},
+		{ "title": "Ho dolore", "id": 1202},
+		{ "title": "Ho fame", "id": 1205},
+		{ "title": "Ho freddo", "id": 1204},
+		{ "title": "Ho sete", "id": 1206},
+		{ "title": "Ho sonno", "id": 1207},
+		{ "title": "Ho troppa saliva", "id": 1210},
+		{ "title": "Passami il telefono", "id": 1302},
+		{ "title": "Prego", "id": 1401},
+		{ "title": "Salutami ...", "id": 1306},
+		{ "title": "Sono arrabbiato", "id": 1102},
+		{ "title": "Sono triste", "id": 1103},
+		{ "title": "Ti voglio bene", "id": 1619},
+		{ "title": "Tutto bene?", "id": 1407},
+		{ "title": "Voglio cambiare posizione", "id": 1209},
+		{ "title": "Voglio stare solo", "id": 1105}
+	]
+}
+

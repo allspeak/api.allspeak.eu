@@ -7,6 +7,7 @@ import bleach
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 import random
 import string
+import os
 
 format="%Y-%m-%d %H:%M:%S"
 
@@ -20,6 +21,7 @@ class TrainingSession(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     completed = db.Column(db.Boolean, default=False, nullable=False)
     created_on = db.Column(db.DateTime, nullable=True)
+    net_path = db.Column(db.String, nullable=False)
 
     def __init__(self, session_uid, model_type, user_id=None):
         self.user_id = user_id
@@ -27,6 +29,7 @@ class TrainingSession(db.Model):
         self.model_type = model_type
         self.completed = False
         self.created_on = datetime.now()  
+        self.net_path = ""
     
     def export_data(self):
         return {
@@ -36,7 +39,8 @@ class TrainingSession(db.Model):
             'session_uid': self.session_uid,
             'model_type': self.model_type,
             'completed': self.completed,
-            'created_on': self.created_on
+            'created_on': self.created_on,
+            'net_path': self.net_path
         }
 
     def get_url(self):
@@ -61,7 +65,8 @@ class User(db.Model):
     api_key = db.Column(db.String, nullable=True, unique=True)
     training_sessions = db.relationship('TrainingSession', backref='user', lazy='dynamic')
 
-    def __init__(self, role, email = None, plaintext_password = None):
+    def __init__(self, role, email = None, plaintext_password = None, apikey = None):
+
         self.email = email
         self.password = plaintext_password
         self.authenticated = False
@@ -69,7 +74,29 @@ class User(db.Model):
         self.last_logged_in = None
         self.current_logged_in = None
         self.role = role
-        self.regenerate_api_key()
+        if apikey is None:      # used to set specific api_key to special users (like ADMIN)
+            self.regenerate_api_key()
+        else:
+            self.api_key = apikey
+        self.create_filesystem()
+
+    # create user file system (NEUROLOGIST does not have their own folder)
+    def create_filesystem(self):
+        
+        user_path = self.get_userpath()
+        if self.role == User.PATIENT:
+            wav_path = os.path.join(user_path, 'voicebank')
+            train_path = os.path.join(user_path, 'train_data')
+            recordings_path = os.path.join(user_path, 'recordings')
+            os.makedirs(wav_path)
+            os.makedirs(train_path)
+            os.makedirs(recordings_path) 
+        elif self.role == User.ADMIN:
+            train_path = os.path.join(user_path, 'train_data')
+            os.makedirs(train_path)
+
+    def get_userpath(self):
+        return os.path.join(app.instance_path, 'users_data', self.api_key)
 
     @hybrid_property
     def password(self):
@@ -139,11 +166,22 @@ class User(db.Model):
         return '<User {}>'.format(self.email)
 
     def regenerate_api_key(self):
+        current_path = self.get_userpath()  # get user current path before changing it
+        
         tempkey = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(app.config['NDIGITS_APIKEY']))
         user = User.query.filter(User.api_key == tempkey).first()
         if user is None:
             self.api_key = tempkey
-            return        
+
+            # renames user folder if exist (basically, on user creation it doesn't do anything)
+            new_path = self.get_userpath()
+
+            if os.path.exists(new_path) is True: 
+                return False # "ERROR" # TODO: rise an exception....new_path should not be present
+
+            if os.path.exists(current_path) is True: 
+                os.renames(current_path, new_path)
+            return True       
         else:
             return self.regenerate_api_key()
 
