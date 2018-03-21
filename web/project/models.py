@@ -17,16 +17,18 @@ class TrainingSession(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     session_uid = db.Column(db.String, nullable=False, unique=True)
-    model_type = db.Column(db.String, nullable=False)
+    model_type = db.Column(db.Integer, nullable=False)
+    preproc_type = db.Column(db.Integer, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     completed = db.Column(db.Boolean, default=False, nullable=False)
     created_on = db.Column(db.DateTime, nullable=True)
     net_path = db.Column(db.String, nullable=False)
 
-    def __init__(self, session_uid, model_type, user_id=None):
+    def __init__(self, session_uid, model_type, preproc_type, user_id=None):
         self.user_id = user_id
         self.session_uid = session_uid
         self.model_type = model_type
+        self.preproc_type = preproc_type
         self.completed = False
         self.created_on = datetime.now()  
         self.net_path = ""
@@ -38,6 +40,7 @@ class TrainingSession(db.Model):
             'user_id': self.user_id,
             'session_uid': self.session_uid,
             'model_type': self.model_type,
+            'preproc_type': self.preproc_type,
             'completed': self.completed,
             'created_on': self.created_on,
             'net_path': self.net_path

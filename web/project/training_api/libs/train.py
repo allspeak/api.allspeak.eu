@@ -18,9 +18,8 @@ from . import freeze
 from . import models
 from . import utilities
 from . import context
-from pathlib import Path
 from project import db
-from project.models import TrainingSession
+from project.models import TrainingSession, User
 
 # =========================================================================================================================
 # =========================================================================================================================
@@ -66,22 +65,41 @@ def train_net(session_data, session_path, training_sessionid, voicebank_vocabula
         data_matrix, label_matrix = utilities.getSubjectTrainingMatrix(data_path, commands_ids, range(0,250), '')
 
     # START TRAINING
-    if modeltype == 274:
+    if modeltype == 274:    # PU
         trainPureUser(data_matrix, label_matrix, commands_ids, output_net_name, session_path, 
                       voicebank_vocabulary_path, session_data, model_data, clean_folder)
-    elif modeltype == 275:
+
+    elif modeltype == 275:  # PUA (retrieve the pb file of the init PU session specified)
         init_training_session = TrainingSession.query.filter_by(session_uid=str(session_data['training_sessionid'])).first()
         if init_training_session is None:
-            pass
+            pass # TODO : raise errors to user... I 
         else:
             model_data['init_net_path'] = init_training_session.net_path
 
         trainAdapted(data_matrix, label_matrix, commands_ids, output_net_name, session_path, 
                       voicebank_vocabulary_path, session_data, model_data, clean_folder)  
-    elif modeltype == 276:
+
+    elif modeltype == 276:  # CA (retrieve the pb file of the common session specified)
+        admin_id = User.query.filter_by(role="admin").first()
+        # get last trainingSession posted by ADMIN with same PREPROC methods
+        init_training_session = TrainingSession.query.filter_by(user_id=admin_id, preproc_type=session_data['nProcessingScheme']).order_by(TrainingSession.id.desc()).first()
+        if init_training_session is None:
+            # TODO : raise errors to user... I 
+            return
+        else:
+            model_data['init_net_path'] = init_training_session.net_path
+
         trainAdapted(data_matrix, label_matrix, commands_ids, output_net_name, session_path, 
                       voicebank_vocabulary_path, session_data, model_data, clean_folder)  
-    elif modeltype == 277:
+
+    elif modeltype == 277:  # URA
+        init_training_session = TrainingSession.query.filter_by(session_uid=str(session_data['training_sessionid'])).first()
+        if init_training_session is None:
+            # TODO : raise errors to user... I 
+            return
+        else:
+            model_data['init_net_path'] = init_training_session.net_path
+
         trainReAdapted(data_matrix, label_matrix, commands_ids, output_net_name, session_path, 
                       voicebank_vocabulary_path, session_data, model_data, clean_folder)
 
@@ -212,7 +230,6 @@ def trainAdapted(train_data_matrix, train_label_matrix, commands_list, output_mo
                 shutil.rmtree(os.path.join(session_path, 'data'))
 
     utilities.createVocabularyJson(commands_list, model_data, session_data, voicebank_vocabulary_path, os.path.join(session_path, 'vocabulary.json'))
-
 
 
 def trainReAdapted(train_data_matrix, train_label_matrix, commands_list, output_model_name, session_path, voicebank_vocabulary_path, model_data, session_data, clean_folder=False):

@@ -14,7 +14,7 @@ Create a new training_session
 
 ## Parameters
 
-A ZIP file with the training information (See the [samples folder](../web/project/samples))
+A ZIP file with the training information (See the [samples folder](../web/inputnet/samples))
 
 ***
 
