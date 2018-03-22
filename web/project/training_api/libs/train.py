@@ -28,6 +28,7 @@ from project.models import TrainingSession, User
 # =========================================================================================================================
 # session_path is   : instance/users_data/APIKEY/train_data/training_sessionid
 # data files are in : session_path/data
+# session_data is   : nModelType, nProcessingScheme, commands, init_sessionid
 def train_net(session_data, session_path, training_sessionid, voicebank_vocabulary_path, clean_folder=True):
     
     # GET SESSION INFO
@@ -64,24 +65,30 @@ def train_net(session_data, session_path, training_sessionid, voicebank_vocabula
     else:
         data_matrix, label_matrix = utilities.getSubjectTrainingMatrix(data_path, commands_ids, range(0,250), '')
 
+    training_data_len = len(data_matrix[0])     # colonne: input layer length
+    ncommands = len(commands_ids)
+    initnet_vars_name = model_data['ftnet_vars_name']
+
     # START TRAINING
     if modeltype == 274:    # PU
-        trainPureUser(data_matrix, label_matrix, commands_ids, output_net_name, session_path, 
-                      voicebank_vocabulary_path, session_data, model_data, clean_folder)
+        net_input, net_output, y = trainPureUser(training_data_len, ncommands, initnet_vars_name)
+        trainModel(data_matrix, label_matrix, model_data, net_input, net_output, y, output_net_name, session_path)
 
     elif modeltype == 275:  # PUA (retrieve the pb file of the init PU session specified)
-        init_training_session = TrainingSession.query.filter_by(session_uid=str(session_data['training_sessionid'])).first()
+        init_training_session = TrainingSession.query.filter_by(session_uid=str(session_data['init_sessionid'])).first()
         if init_training_session is None:
-            pass # TODO : raise errors to user... I 
+            return # TODO : raise errors to user... I 
         else:
             model_data['init_net_path'] = init_training_session.net_path
 
-        trainAdapted(data_matrix, label_matrix, commands_ids, output_net_name, session_path, 
-                      voicebank_vocabulary_path, session_data, model_data, clean_folder)  
+        net_input, net_output, y, graph = trainAdapted(training_data_len, ncommands, initnet_vars_name, init_training_session.net_path)  
+        trainModel(data_matrix, label_matrix, model_data, net_input, net_output, y, output_net_name, session_path, graph)
 
     elif modeltype == 276:  # CA (retrieve the pb file of the common session specified)
         admin_id = User.query.filter_by(role="admin").first()
-        # get last trainingSession posted by ADMIN with same PREPROC methods
+        input_initmodel_path = model_data['init_net_path']
+
+        # get last trainingSession posted by ADMIN (thus a common net) with same PREPROC method
         init_training_session = TrainingSession.query.filter_by(user_id=admin_id, preproc_type=session_data['nProcessingScheme']).order_by(TrainingSession.id.desc()).first()
         if init_training_session is None:
             # TODO : raise errors to user... I 
@@ -89,19 +96,21 @@ def train_net(session_data, session_path, training_sessionid, voicebank_vocabula
         else:
             model_data['init_net_path'] = init_training_session.net_path
 
-        trainAdapted(data_matrix, label_matrix, commands_ids, output_net_name, session_path, 
-                      voicebank_vocabulary_path, session_data, model_data, clean_folder)  
-
+        net_input, net_output, y, graph = trainAdapted(training_data_len, ncommands, initnet_vars_name, init_training_session.net_path)
+        trainModel(data_matrix, label_matrix, model_data, net_input, net_output, y, output_net_name, session_path, graph)
+          
     elif modeltype == 277:  # URA
-        init_training_session = TrainingSession.query.filter_by(session_uid=str(session_data['training_sessionid'])).first()
+        init_training_session = TrainingSession.query.filter_by(session_uid=str(session_data['init_sessionid'])).first()
         if init_training_session is None:
             # TODO : raise errors to user... I 
             return
         else:
             model_data['init_net_path'] = init_training_session.net_path
 
-        trainReAdapted(data_matrix, label_matrix, commands_ids, output_net_name, session_path, 
-                      voicebank_vocabulary_path, session_data, model_data, clean_folder)
+        net_input, net_output, y, graph = trainReAdapted(training_data_len, ncommands, initnet_vars_name, init_training_session.net_path)
+        trainModel(data_matrix, label_matrix, model_data, net_input, net_output, y, output_net_name, session_path, graph)
+
+    utilities.createVocabularyJson(commands_ids, model_data, session_data, voicebank_vocabulary_path, os.path.join(session_path, 'vocabulary.json'))
 
     print('training completed')
     training_session = TrainingSession.query.filter_by(session_uid=str(training_sessionid)).first()
@@ -111,141 +120,31 @@ def train_net(session_data, session_path, training_sessionid, voicebank_vocabula
     db.session.commit()
 
 # ===========================================================================================================================
-# ===========================================================================================================================
-# TRAIN PRIMITIVES
-# ===========================================================================================================================
-# ===========================================================================================================================
-
-# ===========================================================================================================================
-# trainPureUser(train_data_matrix, train_label_matrix, output_model_name, commands_list,
-#               train_output_net_path, voicebank_vocabulary_path,
-#                   model_type_json_path, sessiondata, clean_folder=False):
-# aims      :   get train data/label matrices and create a PURE USER NEU
-#               This script define the model, prepares it, calls the train process and finally create the net json
-# input     :
-#               train_data_matrix              path to training matrix with cepstra
-#               train_label_matrix             path to training matrix with labels
-#               output_model_name              name of the net folder and file
-#               commands_list                  list of commands ids
-#               train_output_net_path          full path to output net  output/train/$output_model_name
-#               voicebank_vocabulary_path      path 2 file containing the global list of commands (commands list is a subset of it)
-#               model_type_json_path           path to model params: {"nInputParams":792,"nContextFrames":5,"sModelFileName":"default",
-#                                                                     "sInputNodeName":"inputs/I","sOutputNodeName":"SMO","fRecognitionThreshold":0.1,
-#                                                                     "batch_size":500,"hm_epochs":8,"ftnet_vars_name":"model"
-#               sessiondata                    {'nProcessingScheme': processing_scheme, 'sLabel': "default", 'sLocalFolder': "default", 'nModelType': 273
-#               clean_folder=False
-# ===========================================================================================================================
-def trainPureUser(train_data_matrix, train_label_matrix, commands_list, output_model_name, session_path, voicebank_vocabulary_path, model_data, session_data, clean_folder=False):
-
-    # temp folder to create NET files
-    train_output_net_path = os.path.join(session_path, 'data', 'net')
-
-    # GET MODEL DATA
-    initnet_vars_name = model_data['ftnet_vars_name']
-    batch_size = model_data['batch_size']
-    hm_epochs = model_data['hm_epochs']
-    sOutputNodeName = model_data['sOutputNodeName'] #
-
-    training_data_len = len(train_data_matrix[0])     # colonne: input layer length
-    ncommands = len(commands_list)
+def trainPureUser(training_data_len, ncommands, initnet_vars_name):
 
     with tf.name_scope("inputs"):
         x = tf.placeholder(tf.float32, [None, training_data_len], name='I')
         y = tf.placeholder(tf.float32, [None, ncommands], name='y-input')
 
     net_inout = models.new_ff_model3(x, training_data_len, ncommands, initnet_vars_name)
-    input_layer = net_inout["input"]
-    out_layer = net_inout["output"]
+    return net_inout["input"], net_inout["output"], y
 
-    # 'Saver' op to save and restore first 3 layers
-    saver = tf.train.Saver()
-
-    # Running first session
-    print("Starting 1st session...")
-    with tf.Session() as sess:
-        with tf.device('/cpu:0'):
-            start_time = time.time()
-            train(sess, saver, train_data_matrix, train_label_matrix, initnet_vars_name, input_layer, out_layer, 
-                   y, train_output_net_path, output_model_name, hm_epochs, batch_size)
-            elapsed_time = time.time() - start_time
-            print("elapsed time : " + str(elapsed_time))
-
-        with tf.device('/cpu:0'):
-            result = freeze.freeze(output_model_name, train_output_net_path, sOutputNodeName)
-            # move optimized net to session path
-            os.rename(result['grp_opt_name'], os.path.join(session_path, 'optimized_' + output_model_name + '.pb'))
-
-            # delete other files
-            if clean_folder is True and os.path.isdir(os.path.join(session_path, 'data')) is True:
-                shutil.rmtree(os.path.join(session_path, 'data'))
-
-    utilities.createVocabularyJson(commands_list, model_data, session_data, voicebank_vocabulary_path, os.path.join(session_path, 'vocabulary.json'))
-
-
-def trainAdapted(train_data_matrix, train_label_matrix, commands_list, output_model_name, session_path, voicebank_vocabulary_path, model_data, session_data, clean_folder=False):
-
-    # temp folder to create NET files
-    train_output_net_path = os.path.join(session_path, 'data', 'net')
-
-    # GET MODEL DATA
-    initnet_vars_name = model_data['ftnet_vars_name']
-    batch_size = model_data['batch_size']
-    hm_epochs = model_data['hm_epochs']
-    sOutputNodeName = model_data['sOutputNodeName'] #
-    input_initmodel_path = model_data['init_net_path'] #
-
-    training_data_len = len(train_data_matrix[0])     # colonne: input layer length
-    ncommands = len(commands_list)
+def trainAdapted(training_data_len, ncommands, initnet_vars_name, input_initmodel_path):
 
     with tf.name_scope("inputs"):
         x = tf.placeholder(tf.float32, [None, training_data_len], name='I')
         y = tf.placeholder(tf.float32, [None, ncommands], name='y-input')
 
     graph = freeze.load(input_initmodel_path)
-
+    
     net_inout = models.adapt_ff_model3(x, training_data_len, ncommands, initnet_vars_name, graph)
-    input_layer = net_inout["input"]
-    out_layer = net_inout["output"]
+    return net_inout["input"], net_inout["output"], y, graph
 
-    # 'Saver' op to save and restore first 3 layers
-    saver = tf.train.Saver()
-
-    # Running first session
-    print("Starting 1st session...")
-    with tf.Session() as sess:
-        with tf.device('/cpu:0'):
-            start_time = time.time()
-            train(sess, saver, train_data_matrix, train_label_matrix, initnet_vars_name, input_layer, out_layer, 
-                   y, train_output_net_path, output_model_name, hm_epochs, batch_size)
-            elapsed_time = time.time() - start_time
-            print("elapsed time : " + str(elapsed_time))
-
-        with tf.device('/cpu:0'):
-            result = freeze.freeze(output_model_name, train_output_net_path, sOutputNodeName)
-            # move optimized net to session path
-            os.rename(result['grp_opt_name'], os.path.join(session_path, 'optimized_' + output_model_name + '.pb'))
-
-            # delete other files
-            if clean_folder is True and os.path.isdir(os.path.join(session_path, 'data')) is True:
-                shutil.rmtree(os.path.join(session_path, 'data'))
-
-    utilities.createVocabularyJson(commands_list, model_data, session_data, voicebank_vocabulary_path, os.path.join(session_path, 'vocabulary.json'))
-
-
-def trainReAdapted(train_data_matrix, train_label_matrix, commands_list, output_model_name, session_path, voicebank_vocabulary_path, model_data, session_data, clean_folder=False):
-
-    # temp folder to create NET files
-    train_output_net_path = os.path.join(session_path, 'data', 'net')
+def trainReAdapted(training_data_len, ncommands, initnet_vars_name, input_initmodel_path):
 
     # GET MODEL DATA
     initnet_vars_name = model_data['ftnet_vars_name']
-    batch_size = model_data['batch_size']
-    hm_epochs = model_data['hm_epochs']
-    sOutputNodeName = model_data['sOutputNodeName'] #
     input_initmodel_path = model_data['init_net_path'] #
-
-    training_data_len = len(train_data_matrix[0])     # colonne: input layer length
-    ncommands = len(commands_list)
 
     with tf.name_scope("inputs"):
         x = tf.placeholder(tf.float32, [None, training_data_len], name='I')
@@ -254,32 +153,85 @@ def trainReAdapted(train_data_matrix, train_label_matrix, commands_list, output_
     graph = freeze.load(input_initmodel_path)
 
     net_inout = models.readapt_ff_adaptedmodel(x, training_data_len, ncommands, initnet_vars_name, graph)
-    input_layer = net_inout["input"]
-    out_layer = net_inout["output"]
+    return net_inout["input"], net_inout["output"], y, graph
+
+# ===========================================================================================================================
+
+def trainModel(train_data_matrix, train_label_matrix, model_data, input_layer, out_layer, y, output_model_name, session_path, graph=None, clean_folder=True):
+
+    # temp folder to create NET files
+    train_output_net_path = os.path.join(session_path, 'data', 'net')  # instance/users_data/APIKEY/train_data/training_sessionid/data/net  
+
+    initnet_vars_name = model_data['ftnet_vars_name']
+    batch_size = model_data['batch_size']
+    hm_epochs = model_data['hm_epochs']
+    sOutputNodeName = model_data['sOutputNodeName'] #
 
     # 'Saver' op to save and restore first 3 layers
     saver = tf.train.Saver()
 
     # Running first session
     print("Starting 1st session...")
-    with tf.Session() as sess:
-        with tf.device('/cpu:0'):
-            start_time = time.time()
-            train(sess, saver, train_data_matrix, train_label_matrix, initnet_vars_name, input_layer, out_layer, 
-                   y, train_output_net_path, output_model_name, hm_epochs, batch_size)
-            elapsed_time = time.time() - start_time
-            print("elapsed time : " + str(elapsed_time))
+    if graph is None:
+        with tf.Session() as sess:
+            with tf.device('/cpu:0'):
+                start_time = time.time()
+                train(sess, saver, train_data_matrix, train_label_matrix, initnet_vars_name, input_layer, out_layer, 
+                    y, train_output_net_path, output_model_name, hm_epochs, batch_size)
+                elapsed_time = time.time() - start_time
+                print("elapsed time : " + str(elapsed_time))
 
-        with tf.device('/cpu:0'):
-            result = freeze.freeze(output_model_name, train_output_net_path, sOutputNodeName)
-            # move optimized net to session path
-            os.rename(result['grp_opt_name'], os.path.join(session_path, 'optimized_' + output_model_name + '.pb'))
+            with tf.device('/cpu:0'):
+                result = freeze.freeze(output_model_name, train_output_net_path, sOutputNodeName)
 
-            # delete other files
-            if clean_folder is True and os.path.isdir(os.path.join(session_path, 'data')) is True:
-                shutil.rmtree(os.path.join(session_path, 'data'))
+    else:
+        with tf.Session(graph=graph) as sess:
+            with tf.device('/cpu:0'):
+                start_time = time.time()
+                train(sess, saver, train_data_matrix, train_label_matrix, initnet_vars_name, input_layer, out_layer, 
+                    y, train_output_net_path, output_model_name, hm_epochs, batch_size)
+                elapsed_time = time.time() - start_time
+                print("elapsed time : " + str(elapsed_time))
 
-    utilities.createVocabularyJson(commands_list, model_data, session_data, voicebank_vocabulary_path, os.path.join(session_path, 'vocabulary.json'))
+            with tf.device('/cpu:0'):
+                result = freeze.freeze(output_model_name, train_output_net_path, sOutputNodeName)
+
+    # move optimized net to session path
+    os.rename(result['grp_opt_name'], os.path.join(session_path, 'optimized_' + output_model_name + '.pb'))
+    # delete other files
+    if clean_folder is True and os.path.isdir(os.path.join(session_path, 'data')) is True:
+        shutil.rmtree(os.path.join(session_path, 'data'))
+        
+
+# ===========================================================================================================================
+# ===========================================================================================================================
+# TRAIN PRIMITIVES
+# ===========================================================================================================================
+# ===========================================================================================================================
+
+# ===========================================================================================================================
+# trainPureUser(train_data_matrix, train_label_matrix, commands_list, output_model_name,
+#               train_output_net_path, voicebank_vocabulary_path,
+#               model_type_json_path, sessiondata, clean_folder=False):
+# aims      :   get train data/label matrices and create a PURE USER NEU
+#               This script define the model, prepares it, calls the train process and finally create the net json
+# input     :
+#               train_data_matrix              training matrix with cepstra
+#               train_label_matrix             training matrix with labels
+#               commands_list                  list of commands ids
+#               output_model_name              name of the net file : (sModelFileName, str(modeltype), str_proc_scheme)
+#               train_output_net_path          full path to output net  output/train/$output_model_name
+#               voicebank_vocabulary_path      path 2 file containing the global list of commands (commands list is a subset of it)
+#               model_type_json_path           path to model params: {"nInputParams":792,"nContextFrames":5,"sModelFileName":"default",
+#                                                                     "sInputNodeName":"inputs/I","sOutputNodeName":"SMO","fRecognitionThreshold":0.1,
+#                                                                     "batch_size":500,"hm_epochs":8,"ftnet_vars_name":"model"
+#               sessiondata                    {'nProcessingScheme': processing_scheme, 'sLabel': "default", 'sLocalFolder': "default", 'nModelType': 273
+#               clean_folder=False
+# ===========================================================================================================================
+
+# ===========================================================================================================================
+
+
 
 # ===========================================================================================================================
 # aims      :   This script allows the 3 hidden layers neural network training and it saves the session

@@ -70,7 +70,7 @@ def add_training_session():
     with zipfile.ZipFile(file_path, "r") as zip_ref:
         zip_ref.extractall(data_path)
 
-    # copy json to ../ (train_data/training_sessionid), read it
+    # copy json to users_data/USERKEY/train_data/training_sessionid, read it
     src_json_filename = os.path.join(data_path, 'training.json')
     dest_json_filename = os.path.join(session_path, 'training.json')
     os.rename(src_json_filename, dest_json_filename)
@@ -110,11 +110,9 @@ def add_training_session():
 @training_api_blueprint.route('/api/v1/training-sessions/<session_uid>', methods=['GET'])
 def get_training_session(session_uid):
     
-    #session_path = os.path.join('project', 'data', str(session_uid))
-    session_path = os.path.join('project', 'data', str(session_uid))
-    if (not os.path.exists(session_path)):
-        abort(404)
-
+    # session_path = os.path.join('project', 'data', str(session_uid))
+    # if (not os.path.exists(session_path)):
+    #     abort(404)
     training_session = TrainingSession.query.filter_by(session_uid=session_uid).first()
 
     if training_session is None:
@@ -128,7 +126,9 @@ def get_training_session(session_uid):
         return jsonify(res)
 
     # training completed
-    session_json_filename = os.path.join(session_path, 'training.json')
+    net_file_path = training_session.net_path
+    net_folder = os.path.dirname(net_file_path)
+    session_json_filename = os.path.join(net_folder, 'training.json')
     with open(session_json_filename, 'r') as data_file:
         session_data = json.load(data_file)
 
@@ -180,27 +180,31 @@ def get_training_session(session_uid):
 #============================================================================================
 @training_api_blueprint.route('/api/v1/training-sessions/<session_uid>/network', methods=['GET'])
 def get_training_session_network(session_uid):
-    directory_name = os.path.join(app.root_path, 'data', str(session_uid))
-    if not os.path.isdir(directory_name):
-        abort(404)
 
     training_session = TrainingSession.query.filter_by(session_uid=session_uid).first()
+    net_path = training_session.net_path
 
     if not access_allowed(training_session, current_user):
         abort(401)
 
-    train_data_filepath = os.path.join(directory_name, 'training.json')
-    with open(train_data_filepath, 'r') as train_data_file:
-        train_data = json.load(train_data_file)
-    filename = train_data['sModelFileName']
-    print(filename)
-    filepath = os.path.join(directory_name, filename)
-        
-    if (os.path.isfile(filepath)):
-        attachment_filename = session_uid
-        return send_file(filepath, attachment_filename=attachment_filename)
+    if not os.path.isfile(net_path):
+        abort(404)    
     else:
-        abort(404)
+        attachment_filename = session_uid
+        return send_file(net_path, attachment_filename=attachment_filename)
+
+    # directory_name = os.path.join(app.root_path, 'data', str(session_uid))
+    # train_data_filepath = os.path.join(directory_name, 'training.json')
+    # with open(train_data_filepath, 'r') as train_data_file:
+    #     train_data = json.load(train_data_file)
+    # filename = train_data['sModelFileName']
+    # print(filename)
+    # filepath = os.path.join(directory_name, filename)
+    # if os.path.isfile(net_path):
+    #     attachment_filename = session_uid
+    #     return send_file(net_path, attachment_filename=attachment_filename)
+    # else:
+    #     abort(404)
 
 #============================================================================================
 # accessory
