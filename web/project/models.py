@@ -180,6 +180,7 @@ class User(db.Model):
             new_path = self.get_userpath()
 
             if os.path.exists(new_path) is True: 
+                # raise Exception(msg)
                 return False # "ERROR" # TODO: rise an exception....new_path should not be present
 
             if os.path.exists(current_path) is True: 
