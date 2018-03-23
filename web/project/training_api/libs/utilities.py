@@ -196,7 +196,7 @@ def createVocabularySentence(list_ids, json_inputfile, txt_outputfile):
     file.close()
 
 
-def createVocabularyJson(list_ids, model, sessiondata, json_globalvocabulary, json_outputfile):
+def createVocabularyJson(list_ids, model, sessiondata, training_sessionid, json_globalvocabulary, json_outputfile):
 
     # get commands list from json_globalvocabulary
     vocabulary = getVocabularyFromJSON(json_globalvocabulary)
@@ -226,6 +226,7 @@ def createVocabularyJson(list_ids, model, sessiondata, json_globalvocabulary, js
            'fRecognitionThreshold': model['fRecognitionThreshold'],
            'sCreationTime': nw.strftime('%Y/%m/%d %H:%M:%S'),
            'sLocalFolder': sessiondata['sLocalFolder'],
+           'sessionid': str(training_sessionid),
            'commands': commands
            }
 
@@ -326,7 +327,10 @@ def getSubjectTrainingMatrix(in_orig_subj_path, arr_commands, arr_rip, file_pref
         cnt = 0
         for ctxfile in glob.glob(in_orig_subj_path + '/' + file_prefix + '*'):
 
-            spl = re.split('[_ .]', ctxfile)  # e.g. ctx_SUBJ_CMD_REP => spl2[2] num comando, spl[3] num ripetiz
+            filename = ctxfile.split('/')[-1]
+            spl = filename.split('.')[0]
+            spl = spl.split('_')
+            # spl = re.split('[_ .]', filename)  # e.g. ctx_SUBJ_CMD_REP => spl2[2] num comando, spl[3] num ripetiz
             id_cmd = int(spl[2])
             id_rep = int(spl[3])
 
@@ -349,12 +353,16 @@ def getSubjectTrainingMatrix(in_orig_subj_path, arr_commands, arr_rip, file_pref
                     mat_lab = np.vstack((mat_lab, lb))
                 cnt = cnt + 1
 
+
     except Exception as e:
         print(str(e))
 
-    print("createSubjectTrainingMatrix ended: " + str(totalsize))
+    rows = len(mat_compl)
+    cols = len(mat_compl[0])
+    print("getSubjectTrainingMatrix ended, row: " + str(rows)+ ", cols: " + str(cols))
 
-    return {'data_matrices': mat_compl, 'labels_matrices': mat_lab}
+    return mat_compl, mat_lab
+    # return {'data_matrices': mat_compl, 'labels_matrices': mat_lab}
 
 
 # ===========================================================================================================================
