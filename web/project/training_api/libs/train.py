@@ -31,94 +31,99 @@ from project.models import TrainingSession, User
 # session_data is   : nModelType, nProcessingScheme, commands, init_sessionid
 def train_net(session_data, session_path, training_sessionid, voicebank_vocabulary_path, clean_folder=True):
     
-    # GET SESSION INFO
-    modeltype = session_data['nModelType']
-    str_proc_scheme = str(session_data['nProcessingScheme'])  # 252/253/254/255/256/257/258
-    commands = session_data['commands']
-    commands_ids = [cmd['id'] for cmd in commands]
+    try:
+        # GET SESSION INFO
+        modeltype = session_data['nModelType']
+        str_proc_scheme = str(session_data['nProcessingScheme'])  # 252/253/254/255/256/257/258
+        commands = session_data['commands']
+        commands_ids = [cmd['id'] for cmd in commands]
 
-    # LOAD SELECTED MODEL PARAMS
-    if modeltype == 274:
-        trainparams_json = os.path.join('project', 'training_api', 'pure_user_trainparams.json')
-    elif modeltype == 275:
-        trainparams_json = os.path.join('project', 'training_api', 'pure_user_adapted_trainparams.json')    
-    elif modeltype == 276:
-        trainparams_json = os.path.join('project', 'training_api', 'common_adapted_trainparams.json')    
-    elif modeltype == 277:
-        trainparams_json = os.path.join('project', 'training_api', 'user_readapted_trainparams.json')  
+        # LOAD SELECTED MODEL PARAMS
+        if modeltype == 274:
+            trainparams_json = os.path.join('project', 'training_api', 'pure_user_trainparams.json')
+        elif modeltype == 275:
+            trainparams_json = os.path.join('project', 'training_api', 'pure_user_adapted_trainparams.json')    
+        elif modeltype == 276:
+            trainparams_json = os.path.join('project', 'training_api', 'common_adapted_trainparams.json')    
+        elif modeltype == 277:
+            trainparams_json = os.path.join('project', 'training_api', 'user_readapted_trainparams.json')  
 
-    with open(trainparams_json, 'r') as data_file:
-        model_data = json.load(data_file)
+        with open(trainparams_json, 'r') as data_file:
+            model_data = json.load(data_file)
 
-    # SET/CREATE NET NAME & PATH
-    data_path = os.path.join(session_path, 'data')
-    sModelFileName = model_data['sModelFileName'] 
-    output_net_name = "%s_%s_%s" % (sModelFileName, str(modeltype), str_proc_scheme)
-    output_net_path = os.path.join(data_path, 'net')
-    os.makedirs(output_net_path)
+        # SET/CREATE NET NAMEvoicebank_vocabulary_path & PATH
+        data_path = os.path.join(session_path, 'data')
+        sModelFileName = model_data['sModelFileName'] 
+        output_net_name = "%s_%s_%s" % (sModelFileName, str(modeltype), str_proc_scheme)
+        output_net_path = os.path.join(data_path, 'net')
+        os.makedirs(output_net_path)
 
-    # CONTEXTING DATA (create ctx_...  files)
-    ctx_frames = model_data['nContextFrames']   
-    if ctx_frames > 0:
-        context.createSubjectContext(data_path, ctx_frames)
-        data_matrix, label_matrix = utilities.getSubjectTrainingMatrix(data_path, commands_ids, range(0,250), 'ctx')
-    else:
-        data_matrix, label_matrix = utilities.getSubjectTrainingMatrix(data_path, commands_ids, range(0,250), '')
-
-    training_data_len = len(data_matrix[0])     # colonne: input layer length
-    ncommands = len(commands_ids)
-    initnet_vars_name = model_data['ftnet_vars_name']
-
-    # START TRAINING
-    if modeltype == 274:    # PU
-        net_input, net_output, y = trainPureUser(training_data_len, ncommands, initnet_vars_name)
-        trainModel(data_matrix, label_matrix, model_data, net_input, net_output, y, output_net_name, session_path)
-
-    elif modeltype == 275:  # PUA (retrieve the pb file of the init PU session specified)
-        init_training_session = TrainingSession.query.filter_by(session_uid=str(session_data['init_sessionid'])).first()
-        if init_training_session is None:
-            return # TODO : raise errors to user... I 
+        # CONTEXTING DATA (create ctx_...  files)
+        ctx_frames = model_data['nContextFrames']   
+        if ctx_frames > 0:
+            context.createSubjectContext(data_path, ctx_frames)
+            data_matrix, label_matrix = utilities.getSubjectTrainingMatrix(data_path, commands_ids, range(0,250), 'ctx')
         else:
-            model_data['init_net_path'] = init_training_session.net_path
+            data_matrix, label_matrix = utilities.getSubjectTrainingMatrix(data_path, commands_ids, range(0,250), '')
 
-        net_input, net_output, y, graph = trainAdapted(training_data_len, ncommands, initnet_vars_name, init_training_session.net_path)  
-        trainModel(data_matrix, label_matrix, model_data, net_input, net_output, y, output_net_name, session_path, graph)
+        training_data_len = len(data_matrix[0])     # colonne: input layer length
+        ncommands = len(commands_ids)
+        initnet_vars_name = model_data['ftnet_vars_name']
 
-    elif modeltype == 276:  # CA (retrieve the pb file of the common session specified)
-        admin_id = User.query.filter_by(role="admin").first()
-        input_initmodel_path = model_data['init_net_path']
+        # START TRAINING
+        if modeltype == 274:    # PU
+            net_input, net_output, y = trainPureUser(training_data_len, ncommands, initnet_vars_name)
+            trainModel(data_matrix, label_matrix, model_data, net_input, net_output, y, output_net_name, session_path)
 
-        # get last trainingSession posted by ADMIN (thus a common net) with same PREPROC method
-        init_training_session = TrainingSession.query.filter_by(user_id=admin_id, preproc_type=session_data['nProcessingScheme']).order_by(TrainingSession.id.desc()).first()
-        if init_training_session is None:
-            # TODO : raise errors to user... I 
-            return
-        else:
-            model_data['init_net_path'] = init_training_session.net_path
+        elif modeltype == 275:  # PUA (retrieve the pb file of the init PU session specified)
+            init_training_session = TrainingSession.query.filter_by(session_uid=str(session_data['init_sessionid'])).first()
+            if init_training_session is None:
+                return # TODO : raise errors to user... I 
+            else:
+                model_data['init_net_path'] = init_training_session.net_path
 
-        net_input, net_output, y, graph = trainAdapted(training_data_len, ncommands, initnet_vars_name, init_training_session.net_path)
-        trainModel(data_matrix, label_matrix, model_data, net_input, net_output, y, output_net_name, session_path, graph)
-          
-    elif modeltype == 277:  # URA
-        init_training_session = TrainingSession.query.filter_by(session_uid=str(session_data['init_sessionid'])).first()
-        if init_training_session is None:
-            # TODO : raise errors to user... I 
-            return
-        else:
-            model_data['init_net_path'] = init_training_session.net_path
+            net_input, net_output, y, graph = trainAdapted(training_data_len, ncommands, initnet_vars_name, init_training_session.net_path)  
+            trainModel(data_matrix, label_matrix, model_data, net_input, net_output, y, output_net_name, session_path, graph)
 
-        net_input, net_output, y, graph = trainReAdapted(training_data_len, ncommands, initnet_vars_name, init_training_session.net_path)
-        trainModel(data_matrix, label_matrix, model_data, net_input, net_output, y, output_net_name, session_path, graph)
+        elif modeltype == 276:  # CA (retrieve the pb file of the common session specified)
+            admin_id = User.query.filter_by(role="admin").first()
+            input_initmodel_path = model_data['init_net_path']
 
-    utilities.createVocabularyJson(commands_ids, model_data, session_data, voicebank_vocabulary_path, os.path.join(session_path, 'vocabulary.json'))
+            # get last trainingSession posted by ADMIN (thus a common net) with same PREPROC method
+            init_training_session = TrainingSession.query.filter_by(user_id=admin_id, preproc_type=session_data['nProcessingScheme']).order_by(TrainingSession.id.desc()).first()
+            if init_training_session is None:
+                # TODO : raise errors to user... I 
+                return
+            else:
+                model_data['init_net_path'] = init_training_session.net_path
 
-    print('training completed')
-    training_session = TrainingSession.query.filter_by(session_uid=str(training_sessionid)).first()
-    training_session.completed = True
-    training_session.net_path = os.path.join(session_path, 'optimized_' + output_net_name + '.pb')
-    db.session.add(training_session)
-    db.session.commit()
+            net_input, net_output, y, graph = trainAdapted(training_data_len, ncommands, initnet_vars_name, init_training_session.net_path)
+            trainModel(data_matrix, label_matrix, model_data, net_input, net_output, y, output_net_name, session_path, graph)
+            
+        elif modeltype == 277:  # URA
+            init_training_session = TrainingSession.query.filter_by(session_uid=str(session_data['init_sessionid'])).first()
+            if init_training_session is None:
+                # TODO : raise errors to user... I 
+                return
+            else:
+                model_data['init_net_path'] = init_training_session.net_path
 
+            net_input, net_output, y, graph = trainReAdapted(training_data_len, ncommands, initnet_vars_name, init_training_session.net_path)
+            trainModel(data_matrix, label_matrix, model_data, net_input, net_output, y, output_net_name, session_path, graph)
+
+
+        print(voicebank_vocabulary_path)
+        utilities.createVocabularyJson(commands_ids, model_data, session_data, training_sessionid, voicebank_vocabulary_path, os.path.join(session_path, 'vocabulary.json'))
+
+        training_session = TrainingSession.query.filter_by(session_uid=str(training_sessionid)).first()
+        training_session.completed = True
+        training_session.net_path = os.path.join(session_path, 'optimized_' + output_net_name + '.pb')
+        db.session.add(training_session)
+        db.session.commit()
+        print('training completed')
+
+    except Exception as e:
+        print(str(e))        
 # ===========================================================================================================================
 def trainPureUser(training_data_len, ncommands, initnet_vars_name):
 
@@ -157,7 +162,7 @@ def trainReAdapted(training_data_len, ncommands, initnet_vars_name, input_initmo
 
 # ===========================================================================================================================
 
-def trainModel(train_data_matrix, train_label_matrix, model_data, input_layer, out_layer, y, output_model_name, session_path, graph=None, clean_folder=True):
+def trainModel(train_data_matrix, train_label_matrix, model_data, input_layer, out_layer, y, output_model_name, session_path, graph=None, clean_folder=False):
 
     # temp folder to create NET files
     train_output_net_path = os.path.join(session_path, 'data', 'net')  # instance/users_data/APIKEY/train_data/training_sessionid/data/net  

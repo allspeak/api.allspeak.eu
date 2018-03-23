@@ -169,7 +169,11 @@ class User(db.Model):
         return '<User {}>'.format(self.email)
 
     def regenerate_api_key(self):
-        current_path = self.get_userpath()  # get user current path before changing it
+
+        if self.api_key is not None:
+            current_path = self.get_userpath()  # NOT USER CREATION: get user current path before changing it
+        else:
+            current_path = None
         
         tempkey = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(app.config['NDIGITS_APIKEY']))
         user = User.query.filter(User.api_key == tempkey).first()
@@ -183,8 +187,9 @@ class User(db.Model):
                 # raise Exception(msg)
                 return False # "ERROR" # TODO: rise an exception....new_path should not be present
 
-            if os.path.exists(current_path) is True: 
-                os.renames(current_path, new_path)
+            if current_path is not None:
+                if os.path.exists(current_path) is True: 
+                    os.renames(current_path, new_path)
             return True       
         else:
             return self.regenerate_api_key()

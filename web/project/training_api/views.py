@@ -33,7 +33,7 @@ training_api_blueprint = Blueprint('training_api', __name__)
 # save zip 
 # => I copy zip to      instance/users_data/APIKEY/train_data/training_sessionid/data.zip
 # => I extract zip to   instance/users_data/APIKEY/train_data/training_sessionid/data
-# copy json from        instance/..../training_sessionid/data => instance/..../training_sessionid/training.json
+# copy json from        instance/..../training_sessionid/data => instance/..../training_sessionid/vocabulary.json
 # read from it the nModelType
 # add present session into the db
 # start training :      train.train_net(session_data, session_path, session_uid, voicebank_vocabulary_path, True)
@@ -46,7 +46,7 @@ def add_training_session():
         raise RequestException(msg)
 
     # list of available commands
-    voicebank_vocabulary_path = os.path.join(app.instance_path, 'inputnet', 'voicebank_commands.json')
+    voicebank_vocabulary_path = os.path.join(app.instance_path, 'voicebank_commands.json')
 
     # get session & user IDs
     userkey = current_user.get_key()
@@ -71,8 +71,8 @@ def add_training_session():
         zip_ref.extractall(data_path)
 
     # copy json to users_data/USERKEY/train_data/training_sessionid, read it
-    src_json_filename = os.path.join(data_path, 'training.json')
-    dest_json_filename = os.path.join(session_path, 'training.json')
+    src_json_filename = os.path.join(data_path, 'vocabulary.json')
+    dest_json_filename = os.path.join(session_path, 'vocabulary.json')
     os.rename(src_json_filename, dest_json_filename)
 
     with open(dest_json_filename, 'r') as data_file:
@@ -128,7 +128,7 @@ def get_training_session(session_uid):
     # training completed
     net_file_path = training_session.net_path
     net_folder = os.path.dirname(net_file_path)
-    session_json_filename = os.path.join(net_folder, 'training.json')
+    session_json_filename = os.path.join(net_folder, 'vocabulary.json')
     with open(session_json_filename, 'r') as data_file:
         session_data = json.load(data_file)
 
@@ -148,7 +148,8 @@ def get_training_session(session_uid):
 
     nitems = len(session_data['commands'])
 
-    output_net_name = "optimized_%s_%s_%d.pb" % (train_data['sModelFileName'], session_uid, session_data['nProcessingScheme'])
+    output_net_name = "optimized_%s_%s_%d" % (train_data['sModelFileName'], str(modeltype), session_data['nProcessingScheme'])
+
 
     # create return JSON
     # bLoaded, nDataDest, AssetManager are not sent back
@@ -194,7 +195,7 @@ def get_training_session_network(session_uid):
         return send_file(net_path, attachment_filename=attachment_filename)
 
     # directory_name = os.path.join(app.root_path, 'data', str(session_uid))
-    # train_data_filepath = os.path.join(directory_name, 'training.json')
+    # train_data_filepath = os.path.join(directory_name, 'vocabulary.json')
     # with open(train_data_filepath, 'r') as train_data_file:
     #     train_data = json.load(train_data_file)
     # filename = train_data['sModelFileName']
