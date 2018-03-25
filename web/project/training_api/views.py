@@ -10,7 +10,7 @@ from project.exceptions import RequestException
 from .libs import context, train
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from project.models import TrainingSession, User
+from project.models import TrainingSession, User, Error
 from project import db, app
 
 training_api_blueprint = Blueprint('training_api', __name__)
@@ -82,10 +82,15 @@ def add_training_session():
     modeltype = session_data['nModelType']
     preproctype = session_data['nProcessingScheme']
 
+    if user_exists(current_user):
+        user_id = current_user.id
+    else:
+        user_id = None
+
     # add present session into the db
     training_session = TrainingSession(session_uid, modeltype, preproctype)
-    if user_exists(current_user):
-        training_session.user_id = current_user.id
+    if user_id is not None:
+        training_session.user_id = user_id
     db.session.add(training_session)
     db.session.commit()
 
@@ -93,9 +98,9 @@ def add_training_session():
     parallel_execution = True
     if parallel_execution:
         executor = ThreadPoolExecutor(2)
-        executor.submit(train.train_net, session_data, session_path, session_uid, voicebank_vocabulary_path, True)
+        executor.submit(train.train_net, session_data, session_path, session_uid, voicebank_vocabulary_path, user_id, True)
     else:
-        train.train_net(session_data, session_path, session_uid, voicebank_vocabulary_path, True)
+        train.train_net(session_data, session_path, session_uid, voicebank_vocabulary_path, user_id, True)
 
     return jsonify({'session_uid': session_uid}), 201, {'Location': training_session.get_url()}
 
@@ -122,7 +127,11 @@ def get_training_session(session_uid):
         abort(401)
 
     if not training_session.completed:
-        res = {'status': 'pending'}
+        error = Error.query.filter_by(session_uid=session_uid).first()
+        if error is None:
+            res = {'status': 'pending'}
+        else:
+            res = {'status': 'error', 'description': error.description}
         return jsonify(res)
 
     # training completed
@@ -193,19 +202,6 @@ def get_training_session_network(session_uid):
     else:
         attachment_filename = session_uid
         return send_file(net_path, attachment_filename=attachment_filename)
-
-    # directory_name = os.path.join(app.root_path, 'data', str(session_uid))
-    # train_data_filepath = os.path.join(directory_name, 'vocabulary.json')
-    # with open(train_data_filepath, 'r') as train_data_file:
-    #     train_data = json.load(train_data_file)
-    # filename = train_data['sModelFileName']
-    # print(filename)
-    # filepath = os.path.join(directory_name, filename)
-    # if os.path.isfile(net_path):
-    #     attachment_filename = session_uid
-    #     return send_file(net_path, attachment_filename=attachment_filename)
-    # else:
-    #     abort(404)
 
 #============================================================================================
 # accessory
