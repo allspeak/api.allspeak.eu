@@ -13,13 +13,14 @@ if os.path.abspath(os.curdir) not in sys.path:
 from project import db
 from project.models import User
 from project.models import TrainingSession
+
 # ----------------------------------------------------------------------------------------------------------------
 # INIT DATA
 # ----------------------------------------------------------------------------------------------------------------
 admin_email = 'alberto.inuggi@gmail.com'
 admin_password = '1234'
-
 admin_key = 'ADMINK'
+
 neuro_email = 'alberto.inuggi@iit.it'
 neuro_password = '1234'
 
@@ -29,6 +30,7 @@ common_net_type = 273
 preproc_type = 252
 
 recreate_filesystem = True
+
 # ----------------------------------------------------------------------------------------------------------------
 # CREATE FILE SYSTEM
 # ----------------------------------------------------------------------------------------------------------------
@@ -73,6 +75,7 @@ db.session.add(admin)
 db.session.commit()
 
 print('admin user created with api_key: ' + admin.api_key)
+
 # ----------------------------------------------------------------------------------------------------------------
 # ADD COMMON NET ASSOCIATED TO ADMIN
 # ----------------------------------------------------------------------------------------------------------------
@@ -83,6 +86,7 @@ os.makedirs(dest_commonnet_path)
 
 training_session = TrainingSession(session_uid, common_net_type, preproc_type, admin_id)
 training_session.net_path = os.path.join(dest_commonnet_path, 'controls_fsc.pb')
+training_session.completed = True
 
 db.session.add(training_session)
 db.session.commit()
@@ -100,6 +104,7 @@ db.session.add(neuro)
 db.session.commit()
 
 print('neurologist user created with api_key: ' + neuro.api_key)
+
 # ----------------------------------------------------------------------------------------------------------------
 # PATIENTS
 # ----------------------------------------------------------------------------------------------------------------
@@ -110,3 +115,8 @@ for i in range(0, n_patients):
 db.session.commit()
 
 print('patients created')
+
+
+# ----------------------------------------------------------------------------------------------------------------
+# END
+# ----------------------------------------------------------------------------------------------------------------

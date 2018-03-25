@@ -117,9 +117,11 @@ def adapt_ff_model3(x, ninputdata_len, noutputclasses, train_vars_name, graph):
     # Hidden layer with RELU activation
     layer_1 = tf.add(tf.matmul(x, W11p), b11p)
     layer_1 = tf.nn.relu(layer_1)
+
     # Hidden layer with RELU activation
     layer_2 = tf.add(tf.matmul(layer_1, W2), b2)
     layer_2 = tf.nn.relu(layer_2)
+
     # Hidden layer with RELU activation
     layer_3 = tf.add(tf.matmul(layer_2, W3), b3)
     layer_3 = tf.nn.relu(layer_3)
