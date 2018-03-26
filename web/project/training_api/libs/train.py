@@ -138,7 +138,7 @@ def trainPureUser(training_data_len, ncommands, train_data_matrix, train_label_m
         x = tf.placeholder(tf.float32, [None, training_data_len], name='I')
         y = tf.placeholder(tf.float32, [None, ncommands], name='y-input')
 
-    net_inout = models.new_ff_model3(x, training_data_len, ncommands_, initnet_vars_name)
+    net_inout = models.new_ff_model3(x, training_data_len, ncommands, initnet_vars_name)
 
     # 'Saver' op to save and restore first 3 layers
     saver = tf.train.Saver()
