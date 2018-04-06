@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+git clean -f
 git reset --hard
 git pull
 chmod +x ./bin/*
