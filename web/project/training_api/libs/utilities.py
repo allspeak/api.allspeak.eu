@@ -214,13 +214,14 @@ def createVocabularyJson(list_ids, model, sessiondata, training_sessionid, json_
     # sModelFilePath is written by the App
     res = {
            'sLabel': sessiondata['sLabel'],
+           'nModelClass': sessiondata['nModelClass'],
            'nModelType': sessiondata['nModelType'],
            'nInputParams': model['nInputParams'],
            'nContextFrames': model['nContextFrames'],
            'nItems2Recognize': lencmds,
            'sModelFilePath': "",
            'sModelFileName': model['sModelFileName'],
-           'sInputNodeName': model['sInputNodeName'],
+           'saInputNodeName': model['saInputNodeName'],
            'sOutputNodeName': model['sOutputNodeName'],
            'nProcessingScheme': sessiondata['nProcessingScheme'],
            'fRecognitionThreshold': model['fRecognitionThreshold'],
@@ -498,3 +499,14 @@ def createFullMatrix(subjects_list, input_net_folder, data_name, label_name, out
                 earray_wrapper.appendArray2File(file_labels, label_matrix_path)
 
     return {'data_matrix_path': data_matrix_path, 'label_matrix_path': label_matrix_path}
+
+
+def getNodeBySubstring(graph, nomesubstring, allnodes=None):
+    if allnodes is None:
+        allnodes = [n.name for n in graph.as_graph_def().node ]
+
+    node_str = [s for s in allnodes if nomesubstring in s]
+    if len(node_str) == 1:
+        return graph.get_tensor_by_name(node_str[0] + ":0")
+    else:
+        return None

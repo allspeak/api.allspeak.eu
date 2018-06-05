@@ -13,6 +13,7 @@
 
 import tensorflow as tf
 from . import freeze
+from . import utilities
 
 n_nodes_hl1=500
 n_nodes_hl2=500
@@ -99,12 +100,19 @@ def new_ff_model4(x, ninputdata_len, nclasses, train_vars_name):
 # I inherit from a graph the 2nd & 3rd hidden layers' weights
 # I create a 4th hidden layer
 # I will train the latter + the 1st and the OutLayer
-def adapt_ff_model3(x, ninputdata_len, noutputclasses, train_vars_name, graph):
+def adapt_ff_model3(x, ninputdata_len, noutputclasses, train_vars_name, graph, prefix=None):
 
-    W2 = graph.get_tensor_by_name('prefix/model/W2:0')
-    W3 = graph.get_tensor_by_name('prefix/model/W3:0')
-    b2 = graph.get_tensor_by_name('prefix/model/b2:0')
-    b3 = graph.get_tensor_by_name('prefix/model/b3:0')
+    if prefix is not None:
+        prefix = prefix + "/"
+    else:
+        prefix = ""
+
+    nodes = [n.name for n in graph.as_graph_def().node]
+
+    W2 = utilities.getNodeBySubstring(graph, prefix + 'model/W2', nodes)
+    W3 = utilities.getNodeBySubstring(graph, prefix + 'model/W3', nodes)
+    b2 = utilities.getNodeBySubstring(graph, prefix + 'model/b2', nodes)
+    b3 = utilities.getNodeBySubstring(graph, prefix + 'model/b3', nodes)
 
     with tf.variable_scope(train_vars_name):
         W11p = weights([ninputdata_len, n_nodes_hl1], 'W11p')
@@ -117,11 +125,9 @@ def adapt_ff_model3(x, ninputdata_len, noutputclasses, train_vars_name, graph):
     # Hidden layer with RELU activation
     layer_1 = tf.add(tf.matmul(x, W11p), b11p)
     layer_1 = tf.nn.relu(layer_1)
-
     # Hidden layer with RELU activation
     layer_2 = tf.add(tf.matmul(layer_1, W2), b2)
     layer_2 = tf.nn.relu(layer_2)
-
     # Hidden layer with RELU activation
     layer_3 = tf.add(tf.matmul(layer_2, W3), b3)
     layer_3 = tf.nn.relu(layer_3)
@@ -139,15 +145,22 @@ def adapt_ff_model3(x, ninputdata_len, noutputclasses, train_vars_name, graph):
 # A)
 # I inherit from a graph the 2nd & 3rd & 4th hidden layers' weights
 # I will train first and last layer
-def readapt_ff_adaptedmodel(x, ninputdata_len, noutputclasses, train_vars_name, graph):
+def readapt_ff_adaptedmodel(x, ninputdata_len, noutputclasses, train_vars_name, graph, prefix=None):
 
-    W2 = graph.get_tensor_by_name('prefix/model/W2:0')
-    W3 = graph.get_tensor_by_name('prefix/model/W3:0')
-    W4 = graph.get_tensor_by_name('prefix/model/W4:0')
+    if prefix is not None:
+        prefix = prefix + "/"
+    else:
+        prefix = ""
 
-    b2 = graph.get_tensor_by_name('prefix/model/b2:0')
-    b3 = graph.get_tensor_by_name('prefix/model/b3:0')
-    b4 = graph.get_tensor_by_name('prefix/model/b4:0')
+    nodes = [n.name for n in graph.as_graph_def().node]
+
+    W2 = utilities.getNodeBySubstring(graph, prefix + 'model/W2', nodes)
+    W3 = utilities.getNodeBySubstring(graph, prefix + 'model/W3', nodes)
+    W4 = utilities.getNodeBySubstring(graph, prefix + train_vars_name + '/W4', nodes)
+
+    b2 = utilities.getNodeBySubstring(graph, prefix + 'model/b2', nodes)
+    b3 = utilities.getNodeBySubstring(graph, prefix + 'model/b3', nodes)
+    b4 = utilities.getNodeBySubstring(graph, prefix + train_vars_name + '/b4', nodes)
 
     with tf.variable_scope(train_vars_name):
         W11p = weights([ninputdata_len, n_nodes_hl1], 'W11p')
@@ -175,19 +188,15 @@ def readapt_ff_adaptedmodel(x, ninputdata_len, noutputclasses, train_vars_name, 
 # B)
 # I inherit all the existing weights (nodes names obtained according to : adapt_ff_model3
 # I train everything
-def readapt_ff_adaptedmodel_2(x, ninputdata_len, noutputclasses, train_vars_name, graph):
+def readapt_ff_adaptedmodel_2(x, ninputdata_len, noutputclasses, train_vars_name, graph, prefix=None):
 
-    W11p = graph.get_tensor_by_name('prefix/model/W11p:0')
-    W2 = graph.get_tensor_by_name('prefix/model/W2:0')
-    W3 = graph.get_tensor_by_name('prefix/model/W3:0')
-    W4 = graph.get_tensor_by_name('prefix/model/W4:0')
-    WOUT1p = graph.get_tensor_by_name('prefix/model/WOUT1p:0')
+    if prefix is not None:        prefix = prefix + "/"
 
-    b11p = graph.get_tensor_by_name('prefix/model/b11p:0')
-    b2 = graph.get_tensor_by_name('prefix/model/b2:0')
-    b3 = graph.get_tensor_by_name('prefix/model/b3:0')
-    b4 = graph.get_tensor_by_name('prefix/model/b4:0')
-    bOUT1p = graph.get_tensor_by_name('prefix/model/bOUT1p:0')
+    b11p = graph.get_tensor_by_name('model/b11p:0')
+    b2 = graph.get_tensor_by_name('model/b2:0')
+    b3 = graph.get_tensor_by_name('model/b3:0')
+    b4 = graph.get_tensor_by_name('model/b4:0')
+    bOUT1p = graph.get_tensor_by_name('model/bOUT1p:0')
 
     # with tf.variable_scope(train_vars_name):
     #     W11p = weights([ninputdata_len, n_nodes_hl1], 'W11p')
