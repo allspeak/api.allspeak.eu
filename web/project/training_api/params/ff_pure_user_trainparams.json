@@ -1,0 +1,11 @@
+{
+    "nInputParams":792,
+    "nContextFrames":5,
+    "sModelFileName":"net",
+    "saInputNodeName":["inputs/I"],
+    "sOutputNodeName":"SMO",
+    "fRecognitionThreshold":0.1,
+    "batch_size":100,
+    "hm_epochs":20,
+    "ftnet_vars_name":"model"
+}

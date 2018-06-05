@@ -92,8 +92,7 @@ def user_email_change(id):
     if request.method == 'POST':
         if form.validate_on_submit():
             try:
-                user_check = User.query.filter_by(
-                    email=form.email.data).first()
+                user_check = User.query.filter_by(email=form.email.data).first()
                 if user_check is None:
                     user.email = form.email.data
                     db.session.add(user)
@@ -154,20 +153,6 @@ def new_patient():
                 new_user = User(role=User.PATIENT)
                 db.session.add(new_user)
                 db.session.commit()
-
-                # create user file system
-                userkey = new_user.get_key()
-                user_path = os.path.join(app.instance_path, 'patients_data', userkey)
-
-                print(user_path)
-
-                wav_path = os.path.join(user_path, 'voicebank')
-                train_path = os.path.join(user_path, 'train_data')
-                recordings_path = os.path.join(user_path, 'recordings')
-                os.makedirs(wav_path)
-                os.makedirs(train_path)
-                os.makedirs(recordings_path)
-                
                 flash('New patient added', 'success')
                 return redirect(url_for('user.user_profile', id=new_user.id))
             except IntegrityError:
@@ -184,12 +169,9 @@ def api_key_reset(id):
         abort(403)
     if request.method == 'POST':
         try:
-            oldkey = user.get_key()
             user.regenerate_api_key()
             db.session.add(user)
             db.session.commit()
-            newkey = user.get_key()            
-            os.rename(oldkey, newkey)
             flash('api key reset completed with success', 'success')
             return redirect(url_for('user.user_profile', id=user.id))
         except IntegrityError:

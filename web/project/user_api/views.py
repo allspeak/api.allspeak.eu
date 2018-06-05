@@ -15,11 +15,14 @@ def api_key_reset():
     if not user_exists(current_user):
         abort(401)
     current_user.refresh_login()
-    current_user.regenerate_api_key()
-    db.session.add(current_user)
-    db.session.commit()
-    res = {'api-key': current_user.api_key}
+    if current_user.regenerate_api_key() is True:
+        db.session.add(current_user)
+        db.session.commit()
+        res = {'api-key': current_user.api_key}
+    else:
+        res = {'message': 'api key could not be changed...contact the administrator'}
     return jsonify(res)
+        
 
 @user_api_blueprint.route('/api/v1/devices/<string:uuid>', methods=["GET"])
 def get_device(uuid):

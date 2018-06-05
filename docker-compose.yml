@@ -10,6 +10,7 @@ services:
     command: /usr/local/bin/gunicorn --timeout=600 --reload -w 2 -b :8000 project:app
     environment:
       PYTHONUNBUFFERED: 0
+      FLASK_APP: project/__init__.py
     depends_on:
       - apiallspeakeudb
     working_dir: /home/flask/app/web
