@@ -85,13 +85,14 @@ dest_commonnet_path = os.path.join(admin.get_userpath(), 'train_data', str(sessi
 os.makedirs(dest_commonnet_path)
 
 training_session = TrainingSession(session_uid, common_net_type, preproc_type, admin_id)
-training_session.net_path = os.path.join(dest_commonnet_path, 'controls_fsc.pb')
+training_session.net_path = os.path.join(dest_commonnet_path, 'net_273_252_280.pb')
 training_session.completed = True
 
 db.session.add(training_session)
 db.session.commit()
 
-copyfile(os.path.join(inputnet_path, 'controls_fsc.pb'), training_session.net_path)
+copyfile(os.path.join(inputnet_path, 'net_273_252_280.pb'), training_session.net_path)
+copyfile(os.path.join(inputnet_path, 'net_273_252_280.json'), os.path.join(dest_commonnet_path, 'net_273_252_280.json'))
 copyfile(os.path.join(inputnet_path, 'vocabulary.json'), os.path.join(dest_commonnet_path, 'vocabulary.json'))
 
 print('common training sessions created')

@@ -1,0 +1,12 @@
+{
+    "nInputParams":72,
+    "nContextFrames":0,
+    "sModelFileName":"net",
+    "saInputNodeName":["inputs/I","inputs/LEN"],
+    "sOutputNodeName":"model/SMO",
+    "fRecognitionThreshold":0,    
+    "batch_size":100,
+    "hm_epochs":20,
+    "ftnet_vars_name":"fine_tuning_weights",
+    "init_net_path":"instance/inputnet/optimized_allcontrols_fsc.pb"
+}

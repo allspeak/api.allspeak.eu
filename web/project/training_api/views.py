@@ -5,6 +5,7 @@ import uuid
 import os
 import zipfile
 import json
+import shutil
 from werkzeug import secure_filename
 from project.exceptions import RequestException
 from .libs import context, train
@@ -79,7 +80,7 @@ def add_training_session():
         session_data = json.load(data_file)
 
     # get nModelType from submitted json
-    modeltype = session_data['nModelType']
+    nModelType = session_data['nModelType']
     preproctype = session_data['nProcessingScheme']
 
     if user_exists(current_user):
@@ -88,7 +89,7 @@ def add_training_session():
         user_id = None
 
     # add present session into the db
-    training_session = TrainingSession(session_uid, modeltype, preproctype)
+    training_session = TrainingSession(session_uid, nModelType, preproctype)
     if user_id is not None:
         training_session.user_id = user_id
     db.session.add(training_session)
@@ -141,36 +142,53 @@ def get_training_session(session_uid):
     with open(session_json_filename, 'r') as data_file:
         session_data = json.load(data_file)
 
-    modeltype = session_data['nModelType']
+    nModelType = session_data['nModelType']
+    nModelClass = session_data['nModelClass']
 
-    if modeltype == 274:
-        trainparams_json = os.path.join('project', 'training_api', 'pure_user_trainparams.json')
-    elif modeltype == 275:
-        trainparams_json = os.path.join('project', 'training_api', 'pure_user_adapted_trainparams.json')    
-    elif modeltype == 276:
-        trainparams_json = os.path.join('project', 'training_api', 'common_adapted_trainparams.json')    
-    elif modeltype == 277:
-        trainparams_json = os.path.join('project', 'training_api', 'user_readapted_trainparams.json')  
+    model_root_path = os.path.join('project', 'training_api', 'params')
+
+    if nModelClass == 280:
+        if nModelType == 274:
+            trainparams_json = os.path.join(model_root_path, 'ff_pure_user_trainparams.json')
+        elif nModelType == 275:
+            trainparams_json = os.path.join(model_root_path, 'ff_pure_user_adapted_trainparams.json')    
+        elif nModelType == 276:
+            trainparams_json = os.path.join(model_root_path, 'ff_common_adapted_trainparams.json')    
+        elif nModelType == 277:
+            trainparams_json = os.path.join(model_root_path, 'ff_user_readapted_trainparams.json')  
+        elif nModelType == 278:
+            trainparams_json = os.path.join(model_root_path, 'ff_common_readapted_trainparams.json')  
+    else:
+        if nModelType == 274:
+            trainparams_json = os.path.join(model_root_path, 'lstm_pure_user_trainparams.json')
+        elif nModelType == 275:
+            trainparams_json = os.path.join(model_root_path, 'lstm_pure_user_adapted_trainparams.json')    
+        elif nModelType == 276:
+            trainparams_json = os.path.join(model_root_path, 'lstm_common_adapted_trainparams.json')    
+        elif nModelType == 277:
+            trainparams_json = os.path.join(model_root_path, 'lstm_user_readapted_trainparams.json')  
+        elif nModelType == 278:
+            trainparams_json = os.path.join(model_root_path, 'lstm_common_readapted_trainparams.json')  
 
     with open(trainparams_json, 'r') as data_file:
         train_data = json.load(data_file)
 
     nitems = len(session_data['commands'])
 
-    output_net_name = "optimized_%s_%s_%d" % (train_data['sModelFileName'], str(modeltype), session_data['nProcessingScheme'])
-
+    output_net_name = "%s_%s_%d_%d" % (train_data['sModelFileName'], str(nModelType), session_data['nProcessingScheme'], nModelClass)
 
     # create return JSON
     # bLoaded, nDataDest, AssetManager are not sent back
     nw = datetime.now()
     res = {'status': 'complete',
            'sLabel': session_data['sLabel'],
-           'nModelType': session_data['nModelType'],
+           'nModelClass': nModelClass,
+           'nModelType': nModelType,
            'nInputParams': train_data['nInputParams'],
            'nContextFrames': train_data['nContextFrames'],
            'nItems2Recognize': nitems,
            'sModelFileName': output_net_name,
-           'sInputNodeName': train_data['sInputNodeName'],
+           'saInputNodeName': train_data['saInputNodeName'],
            'sOutputNodeName': train_data['sOutputNodeName'],
            'fRecognitionThreshold': train_data['fRecognitionThreshold'],           
            'sLocalFolder': session_data['sLocalFolder'],
@@ -202,6 +220,35 @@ def get_training_session_network(session_uid):
     else:
         attachment_filename = session_uid
         return send_file(net_path, attachment_filename=attachment_filename)
+
+
+#============================================================================================
+# DELETE TRAINING SESSION
+#============================================================================================
+@training_api_blueprint.route('/api/v1/training-sessions/<session_uid>/delete', methods=['GET'])
+def delete_training_session(session_uid):
+
+    training_session = TrainingSession.query.filter_by(session_uid=session_uid).first()
+
+    if not access_allowed(training_session, current_user):
+        abort(401)
+
+    # get training session folder & delete it
+    userkey = current_user.get_key()
+    session_path = os.path.join(app.instance_path, 'users_data', userkey, 'train_data', str(session_uid))
+    if os.path.isdir(session_path):
+       shutil.rmtree(session_path)
+
+    # delete db entry
+    db.session.delete(training_session)
+    db.session.commit()
+    print("training session : " + session_uid + " removed")
+
+    return jsonify({'status': 'ok'})
+
+
+
+
 
 #============================================================================================
 # accessory

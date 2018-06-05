@@ -139,12 +139,13 @@ All known errors cause the resource to return HTTP error code header together wi
     "nInputParams": 792,
     "nItems2Recognize": 23,
     "nModelType": 275,
+    "nModelClass": 280,
     "nProcessingScheme": 252,
     "sCreationTime": "2017/12/01 10:45:57",
-    "sInputNodeName": "inputs/I",
+    "saInputNodeName": ["inputs/I"],
     "sLabel": "test",
     "sLocalFolder": "test",
-    "sModelFileName": "optimized_user_ft_323b5468-d684-11e7-999f-0242ac1f0003_252.pb",
+    "sModelFileName": "net_274_252_280.pb",
     "sOutputNodeName": "SMO",
     "status": "complete"
 }
