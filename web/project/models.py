@@ -280,7 +280,7 @@ class Error(db.Model):
     __tablename__ = "error"
 
     id = db.Column(db.Integer, primary_key=True)
-    session_uid = db.Column(db.String, nullable=True, unique=True)
+    session_uid = db.Column(db.String, db.ForeignKey('training_session.session_uid'), nullable=True, unique=True)
     error_code = db.Column(db.Integer, nullable=False)
     description = db.Column(db.String, default=None, nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)

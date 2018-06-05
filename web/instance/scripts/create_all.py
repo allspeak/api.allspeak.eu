@@ -56,6 +56,12 @@ if os.path.exists(mobile_app_root) is False:
 if os.path.exists(temp_train_data_root) is False:
     os.makedirs(temp_train_data_root)
 
+open(os.path.join(users_root, '.gitkeep'), 'a').close()
+open(os.path.join(mobile_app_root, '.gitkeep'), 'a').close()
+open(os.path.join(temp_train_data_root, '.gitkeep'), 'a').close()
+
+
+
 print('Filesystem created')
 
 # ----------------------------------------------------------------------------------------------------------------
