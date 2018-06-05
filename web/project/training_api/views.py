@@ -5,12 +5,13 @@ import uuid
 import os
 import zipfile
 import json
+import shutil
 from werkzeug import secure_filename
 from project.exceptions import RequestException
 from .libs import context, train
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from project.models import TrainingSession, User
+from project.models import TrainingSession, User, Error
 from project import db, app
 
 training_api_blueprint = Blueprint('training_api', __name__)
@@ -24,22 +25,20 @@ training_api_blueprint = Blueprint('training_api', __name__)
 #============================================================================================
 # TRAIN FEATURES
 #============================================================================================
-
 # receive a features' zip & train them:
 #
-# define an unique : session_uid
-
-# I create          data/training_sessionid/data/matrices
-# I copy zip to     data/training_sessionid/data.zip
-# I unzip to        data/training_sessionid/data
-# copy              data/training_sessionid/data/training.json => data/training_sessionid/training.json
+# OPERATIONS
+# get session & user IDs
+# check, prepare file system and get submitted file
+# => I create           instance/users_data/APIKEY/train_data/training_sessionid/data
+# save zip 
+# => I copy zip to      instance/users_data/APIKEY/train_data/training_sessionid/data.zip
+# => I extract zip to   instance/users_data/APIKEY/train_data/training_sessionid/data
+# copy json from        instance/..../training_sessionid/data => instance/..../training_sessionid/vocabulary.json
+# read from it the nModelType
+# add present session into the db
+# start training :      train.train_net(session_data, session_path, session_uid, voicebank_vocabulary_path, True)
 #
-# read from JSON the following:
-# - processing scheme
-# - commands list
-# - modeltype (fine tune init net  OR  new net)
-#
-# calls : train.train_net(session_uid, modeltype, commands_ids, str_proc_scheme, True)
 @training_api_blueprint.route('/api/v1/training-sessions', methods=['POST'])
 def add_training_session():
 
@@ -47,22 +46,22 @@ def add_training_session():
         msg = 'ERROR: no file in request'
         raise RequestException(msg)
 
+    # list of available commands
+    voicebank_vocabulary_path = os.path.join(app.instance_path, 'voicebank_commands.json')
+
+    # get session & user IDs
     userkey = current_user.get_key()
     session_uid = uuid.uuid1()
-
-    # check & prepare file system
-    #session_path = os.path.join('project', 'data', str(session_uid))
-    session_path = os.path.join(app.instance_path, 'patients_data', userkey, 'train_data', str(session_uid))
-
+    
+    # check, prepare file system and get submitted file
+    session_path = os.path.join(app.instance_path, 'users_data', userkey, 'train_data', str(session_uid))
     print(session_path)
-
     if os.path.exists(session_path):
         msg = 'ERROR: training session %d already exist' % session_uid
         raise Exception(msg)
-    file = request.files['file']
-
     data_path = os.path.join(session_path, 'data')
     os.makedirs(data_path)
+    file = request.files['file']
 
     # save zip & extract it
     filename = secure_filename(file.filename)
@@ -72,36 +71,37 @@ def add_training_session():
     with zipfile.ZipFile(file_path, "r") as zip_ref:
         zip_ref.extractall(data_path)
 
-    # copy json to ../ (train_data/training_sessionid), read it
-    src_json_filename = os.path.join(data_path, 'training.json')
-    dest_json_filename = os.path.join(session_path, 'training.json')
+    # copy json to users_data/USERKEY/train_data/training_sessionid, read it
+    src_json_filename = os.path.join(data_path, 'vocabulary.json')
+    dest_json_filename = os.path.join(session_path, 'vocabulary.json')
     os.rename(src_json_filename, dest_json_filename)
 
     with open(dest_json_filename, 'r') as data_file:
-        train_data = json.load(data_file)
+        session_data = json.load(data_file)
 
-    # newnet or ft_initnet
-    modeltype = train_data['nModelType']
-    # list of commands id [1102, 1103, 1206, ...]
-    commands = train_data['commands']
-    commands_ids = [cmd['id'] for cmd in commands]
-    str_proc_scheme = str(train_data['nProcessingScheme'])  # 252/253/254/255
+    # get nModelType from submitted json
+    nModelType = session_data['nModelType']
+    preproctype = session_data['nProcessingScheme']
 
-    training_session = TrainingSession(session_uid, modeltype)
     if user_exists(current_user):
-        training_session.user_id = current_user.id
+        user_id = current_user.id
+    else:
+        user_id = None
+
+    # add present session into the db
+    training_session = TrainingSession(session_uid, nModelType, preproctype)
+    if user_id is not None:
+        training_session.user_id = user_id
     db.session.add(training_session)
     db.session.commit()
 
+    # start training
     parallel_execution = True
-
     if parallel_execution:
         executor = ThreadPoolExecutor(2)
-        executor.submit(train.train_net, session_uid,
-                    modeltype, commands_ids, str_proc_scheme, True)
+        executor.submit(train.train_net, session_data, session_path, session_uid, voicebank_vocabulary_path, user_id, True)
     else:
-        train.train_net(session_uid,
-                    modeltype, commands_ids, str_proc_scheme, True)
+        train.train_net(session_data, session_path, session_uid, voicebank_vocabulary_path, user_id, True)
 
     return jsonify({'session_uid': session_uid}), 201, {'Location': training_session.get_url()}
 
@@ -116,11 +116,9 @@ def add_training_session():
 @training_api_blueprint.route('/api/v1/training-sessions/<session_uid>', methods=['GET'])
 def get_training_session(session_uid):
     
-    #session_path = os.path.join('project', 'data', str(session_uid))
-    session_path = os.path.join('project', 'data', str(session_uid))
-    if (not os.path.exists(session_path)):
-        abort(404)
-
+    # session_path = os.path.join('project', 'data', str(session_uid))
+    # if (not os.path.exists(session_path)):
+    #     abort(404)
     training_session = TrainingSession.query.filter_by(session_uid=session_uid).first()
 
     if training_session is None:
@@ -130,45 +128,73 @@ def get_training_session(session_uid):
         abort(401)
 
     if not training_session.completed:
-        res = {'status': 'pending'}
+        error = Error.query.filter_by(session_uid=session_uid).first()
+        if error is None:
+            res = {'status': 'pending'}
+        else:
+            res = {'status': 'error', 'description': error.description}
         return jsonify(res)
 
-    session_json_filename = os.path.join(session_path, 'training.json')
+    # training completed
+    net_file_path = training_session.net_path
+    net_folder = os.path.dirname(net_file_path)
+    session_json_filename = os.path.join(net_folder, 'vocabulary.json')
     with open(session_json_filename, 'r') as data_file:
         session_data = json.load(data_file)
 
-    modeltype = session_data['nModelType']
-    if modeltype == 274:
-        trainparams_json = os.path.join(
-            'project', 'training_api', 'train_params.json')
+    nModelType = session_data['nModelType']
+    nModelClass = session_data['nModelClass']
+
+    model_root_path = os.path.join('project', 'training_api', 'params')
+
+    if nModelClass == 280:
+        if nModelType == 274:
+            trainparams_json = os.path.join(model_root_path, 'ff_pure_user_trainparams.json')
+        elif nModelType == 275:
+            trainparams_json = os.path.join(model_root_path, 'ff_pure_user_adapted_trainparams.json')    
+        elif nModelType == 276:
+            trainparams_json = os.path.join(model_root_path, 'ff_common_adapted_trainparams.json')    
+        elif nModelType == 277:
+            trainparams_json = os.path.join(model_root_path, 'ff_user_readapted_trainparams.json')  
+        elif nModelType == 278:
+            trainparams_json = os.path.join(model_root_path, 'ff_common_readapted_trainparams.json')  
     else:
-        trainparams_json = os.path.join(
-            'project', 'training_api', 'ft_train_params.json')
+        if nModelType == 274:
+            trainparams_json = os.path.join(model_root_path, 'lstm_pure_user_trainparams.json')
+        elif nModelType == 275:
+            trainparams_json = os.path.join(model_root_path, 'lstm_pure_user_adapted_trainparams.json')    
+        elif nModelType == 276:
+            trainparams_json = os.path.join(model_root_path, 'lstm_common_adapted_trainparams.json')    
+        elif nModelType == 277:
+            trainparams_json = os.path.join(model_root_path, 'lstm_user_readapted_trainparams.json')  
+        elif nModelType == 278:
+            trainparams_json = os.path.join(model_root_path, 'lstm_common_readapted_trainparams.json')  
 
     with open(trainparams_json, 'r') as data_file:
         train_data = json.load(data_file)
 
     nitems = len(session_data['commands'])
 
-    output_net_name = "optimized_%s_%s_%d.pb" % (
-        train_data['sModelFileName'], session_uid, session_data['nProcessingScheme'])
+    output_net_name = "%s_%s_%d_%d" % (train_data['sModelFileName'], str(nModelType), session_data['nProcessingScheme'], nModelClass)
 
     # create return JSON
-    # bLoaded, fRecognitionThreshold, nDataDest, AssetManager are not sent back
+    # bLoaded, nDataDest, AssetManager are not sent back
     nw = datetime.now()
     res = {'status': 'complete',
            'sLabel': session_data['sLabel'],
-           'nModelType': session_data['nModelType'],
+           'nModelClass': nModelClass,
+           'nModelType': nModelType,
            'nInputParams': train_data['nInputParams'],
            'nContextFrames': train_data['nContextFrames'],
            'nItems2Recognize': nitems,
            'sModelFileName': output_net_name,
-           'sInputNodeName': train_data['sInputNodeName'],
+           'saInputNodeName': train_data['saInputNodeName'],
            'sOutputNodeName': train_data['sOutputNodeName'],
            'fRecognitionThreshold': train_data['fRecognitionThreshold'],           
            'sLocalFolder': session_data['sLocalFolder'],
            'nProcessingScheme': session_data['nProcessingScheme'],
            'sCreationTime': nw.strftime('%Y/%m/%d %H:%M:%S'),
+           'sessionid': str(session_uid),
            'commands': session_data['commands']
            }
 
@@ -182,27 +208,47 @@ def get_training_session(session_uid):
 #============================================================================================
 @training_api_blueprint.route('/api/v1/training-sessions/<session_uid>/network', methods=['GET'])
 def get_training_session_network(session_uid):
-    directory_name = os.path.join(app.root_path, 'data', str(session_uid))
-    if not os.path.isdir(directory_name):
-        abort(404)
+
+    training_session = TrainingSession.query.filter_by(session_uid=session_uid).first()
+    net_path = training_session.net_path
+
+    if not access_allowed(training_session, current_user):
+        abort(401)
+
+    if not os.path.isfile(net_path):
+        abort(404)    
+    else:
+        attachment_filename = session_uid
+        return send_file(net_path, attachment_filename=attachment_filename)
+
+
+#============================================================================================
+# DELETE TRAINING SESSION
+#============================================================================================
+@training_api_blueprint.route('/api/v1/training-sessions/<session_uid>/delete', methods=['GET'])
+def delete_training_session(session_uid):
 
     training_session = TrainingSession.query.filter_by(session_uid=session_uid).first()
 
     if not access_allowed(training_session, current_user):
         abort(401)
 
-    train_data_filepath = os.path.join(directory_name, 'training.json')
-    with open(train_data_filepath, 'r') as train_data_file:
-        train_data = json.load(train_data_file)
-    filename = train_data['sModelFileName']
-    print(filename)
-    filepath = os.path.join(directory_name, filename)
-        
-    if (os.path.isfile(filepath)):
-        attachment_filename = session_uid
-        return send_file(filepath, attachment_filename=attachment_filename)
-    else:
-        abort(404)
+    # get training session folder & delete it
+    userkey = current_user.get_key()
+    session_path = os.path.join(app.instance_path, 'users_data', userkey, 'train_data', str(session_uid))
+    if os.path.isdir(session_path):
+       shutil.rmtree(session_path)
+
+    # delete db entry
+    db.session.delete(training_session)
+    db.session.commit()
+    print("training session : " + session_uid + " removed")
+
+    return jsonify({'status': 'ok'})
+
+
+
+
 
 #============================================================================================
 # accessory
