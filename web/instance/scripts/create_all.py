@@ -6,11 +6,12 @@ import sys
 import uuid
 from shutil import copyfile
 from shutil import rmtree
+from flask_migrate import Config, command
 
 if os.path.abspath(os.curdir) not in sys.path:
     sys.path.append(os.path.abspath(os.curdir))
 
-from project import db
+from project import db, app, migrate
 from project.models import User
 from project.models import TrainingSession
 
@@ -67,9 +68,12 @@ print('Filesystem created')
 # ----------------------------------------------------------------------------------------------------------------
 # Create the database tables, add some initial data, and commit to the database
 # ----------------------------------------------------------------------------------------------------------------
-db.drop_all()       # Drop all of the existing database tables
-db.create_all()     # Create the database and the database table
-db.session.commit() # Commit the changes for the users
+
+config = Config("migrations/alembic.ini")
+config.set_main_option("script_location", "migrations")
+with app.app_context():
+    command.downgrade(config, 'base')
+    command.upgrade(config, "head")
 
 print('DB created')
 
