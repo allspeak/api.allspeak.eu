@@ -30,7 +30,7 @@ n_patients = 5
 common_net_type = 273
 preproc_type = 252
 
-recreate_filesystem = True
+recreate_filesystem = False
 
 # ----------------------------------------------------------------------------------------------------------------
 # CREATE FILE SYSTEM
