@@ -42,6 +42,11 @@ training_api_blueprint = Blueprint('training_api', __name__)
 @training_api_blueprint.route('/api/v1/training-sessions', methods=['POST'])
 def add_training_session():
 
+    cdir = os.getcwd()
+    param_file = os.path.join('project', 'training_api', 'params', 'ff_pure_user_trainparams.json')
+    existfile = str(os.path.exists(param_file))
+    raise RequestException(param_file + ':' + param_file + ":" + existfile)
+
     if 'file' not in request.files or request.files['file'].filename == '':
         msg = 'ERROR: no file in request'
         raise RequestException(msg)
