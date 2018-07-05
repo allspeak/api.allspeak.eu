@@ -43,9 +43,9 @@ training_api_blueprint = Blueprint('training_api', __name__)
 def add_training_session():
 
     cdir = os.getcwd()
-    param_file = os.path.join('project', 'training_api', 'params', 'ff_pure_user_trainparams.json')
-    existfile = str(os.path.exists(param_file))
-    raise RequestException(param_file + ':' + param_file + ":" + existfile)
+    param_file1 = os.path.join('project', 'training_api', 'params', 'ff_pure_user_trainparams.json')
+    param_file2 = os.path.join('web', 'project', 'training_api', 'params', 'ff_pure_user_trainparams.json')
+    return jsonify({'param_file1': param_file1, 'param_file2': param_file2, 'cdir':cdir, 'res':os.path.exists(param_file)}), 201, {'Location': training_session.get_url()}
 
     if 'file' not in request.files or request.files['file'].filename == '':
         msg = 'ERROR: no file in request'
