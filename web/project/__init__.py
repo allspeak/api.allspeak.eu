@@ -15,7 +15,7 @@ from flask_migrate import Migrate
 from flask_httpauth import HTTPBasicAuth
 import requests
 import traceback
-from .exceptions import RequestException
+from .exceptions import RequestException, RequestExceptionPlus
 from flask_cors import CORS, cross_origin
 
 
@@ -101,6 +101,12 @@ def exception(e):
     print(str(e))
     traceback.print_exc()
     return make_response(jsonify({'error': str(e)}), 500)
+
+@app.errorhandler(RequestExceptionPlus)
+def exceptionplus(e):
+    print(str(e.get_msg1()))
+    traceback.print_exc()
+    return make_response(jsonify({'error': e.get_msg1(), 'ex': e.get_msg2()}), 500)
 
 @app.errorhandler(400)
 def request_error(e):
