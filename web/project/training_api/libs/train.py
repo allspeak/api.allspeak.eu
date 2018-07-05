@@ -41,7 +41,7 @@ def train_net(session_data, session_path, training_sessionid, voicebank_vocabula
         commands = session_data['commands']
         commands_ids = [cmd['id'] for cmd in commands]
 
-        model_root_path = os.path.join('project', 'training_api', 'params')
+        model_root_path = os.path.join(app.instance_path, 'training_params')
         # LOAD SELECTED MODEL PARAMS
         if nModelClass == 280:
             if nModelType == 274:
