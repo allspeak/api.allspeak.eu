@@ -92,7 +92,7 @@ def add_training_session():
     
     os.rename(src_json_filename, dest_json_filename)
 
-    with open(dest_json_filename, 'r') as data_file:
+    with open(dest_json_filename, 'r', encoding='utf-8') as data_file:
         session_data = json.load(data_file)
 
     # get nModelType from submitted json
@@ -160,7 +160,7 @@ def get_training_session(session_uid):
     net_file_path = training_session.net_path
     net_folder = os.path.dirname(net_file_path)
     session_json_filename = os.path.join(net_folder, 'vocabulary.json')
-    with open(session_json_filename, 'r') as data_file:
+    with open(session_json_filename, 'r', encoding='utf-8') as data_file:
         session_data = json.load(data_file)
 
     nModelType = session_data['nModelType']
@@ -191,7 +191,7 @@ def get_training_session(session_uid):
         elif nModelType == 278:
             trainparams_json = os.path.join(model_root_path, 'lstm_common_readapted_trainparams.json')  
 
-    with open(trainparams_json, 'r') as data_file:
+    with open(trainparams_json, 'r', encoding='utf-8') as data_file:
         train_data = json.load(data_file)
 
     nitems = len(session_data['commands'])
@@ -219,7 +219,7 @@ def get_training_session(session_uid):
            'commands': session_data['commands']
            }
 
-    with open(session_json_filename, 'w') as data_file:
+    with open(session_json_filename, 'w', encoding='utf-8') as data_file:
         json.dump(res, data_file)
 
     return jsonify(res)

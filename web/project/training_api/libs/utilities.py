@@ -178,7 +178,7 @@ def renameSubjectFilesOld(subject_name, inrootpath, outrootpath, vocfilepath):
 
 
 def getVocabularyFromJSON(json_inputfile):
-    with open(json_inputfile) as data_file:
+    with open(json_inputfile, encoding='utf-8') as data_file:
         data = json.load(data_file)
     return data["voicebank_vocabulary"]
 
@@ -231,7 +231,7 @@ def createVocabularyJson(list_ids, model, sessiondata, training_sessionid, json_
            'commands': commands
            }
 
-    with open(json_outputfile, 'w') as data_file:
+    with open(json_outputfile, 'w', encoding='utf-8') as data_file:
         json.dump(res, data_file)
 
 
