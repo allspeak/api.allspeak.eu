@@ -18,7 +18,7 @@ from . import freeze
 from . import models
 from . import utilities
 from . import context
-from project import db
+from project import db, app
 from project.models import TrainingSession, User, Error
 
 # =========================================================================================================================
