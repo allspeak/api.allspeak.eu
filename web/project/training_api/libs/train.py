@@ -66,7 +66,7 @@ def train_net(session_data, session_path, training_sessionid, voicebank_vocabula
             elif nModelType == 278:
                 trainparams_json = os.path.join(model_root_path, 'lstm_common_readapted_trainparams.json')  
 
-        with open(trainparams_json, 'r') as data_file:
+        with open(trainparams_json, 'r', encoding='utf-8') as data_file:
             model_data = json.load(data_file)
 
         # SET/CREATE NET NAME & PATH
