@@ -505,7 +505,7 @@ def getNodeBySubstring(graph, nomesubstring, allnodes=None):
     if allnodes is None:
         allnodes = [n.name for n in graph.as_graph_def().node ]
 
-    node_str = [s for s in allnodes if nomesubstring in s]
+    node_str = [s for s in allnodes if nomesubstring in s and 'read' not in s]
     if len(node_str) == 1:
         return graph.get_tensor_by_name(node_str[0] + ":0")
     else:
