@@ -126,7 +126,7 @@ db.session.add(neuro2)
 db.session.commit()
 print('neurologist user created with api_key: ' + neuro2.api_key)
 
-neuro1 = User(role=User.NEUROLOGIST, email=neuro_email3, plaintext_password=neuro_password3)
+neuro3 = User(role=User.NEUROLOGIST, email=neuro_email3, plaintext_password=neuro_password3)
 db.session.add(neuro3)
 db.session.commit()
 print('neurologist user created with api_key: ' + neuro3.api_key)
