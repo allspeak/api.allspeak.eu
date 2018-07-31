@@ -10,3 +10,4 @@ web/instance/users_data/*
 !web/instance/users_data/.gitkeep
 web/instance/temp_train_data/*
 !web/instance/temp_train_data/.gitkeep
+web/instance/scripts/init_users.txt
