@@ -1,13 +1,13 @@
-"""initial schema
+"""initial_schema
 
-Revision ID: 813cf34bfa87
+Revision ID: 8ee4d82ef1a1
 Revises: None
-Create Date: 2018-04-06 09:03:11.051238
+Create Date: 2018-08-17 12:51:06.531683
 
 """
 
 # revision identifiers, used by Alembic.
-revision = '813cf34bfa87'
+revision = '8ee4d82ef1a1'
 down_revision = None
 
 from alembic import op
@@ -67,12 +67,11 @@ def upgrade():
     )
     op.create_table('error',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('session_uid', sa.String(), nullable=False),
+    sa.Column('session_uid', sa.String(), nullable=True),
     sa.Column('error_code', sa.Integer(), nullable=False),
     sa.Column('description', sa.String(), nullable=True),
     sa.Column('user_id', sa.Integer(), nullable=True),
     sa.Column('created_on', sa.DateTime(), nullable=True),
-    sa.ForeignKeyConstraint(['session_uid'], ['training_session.session_uid'], ),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('session_uid')
