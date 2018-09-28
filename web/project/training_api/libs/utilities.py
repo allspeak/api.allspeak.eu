@@ -2,6 +2,7 @@
 # createSubjectTestMatrix(subj, in_orig_subj_path, output_net_path, arr_commands, arr_rip, sentences_filename, sentence_counter)
 # createFullMatrix(input_matrix_folder, data_name, label_name, output_matrix_path="")
 
+import sys
 import os
 import shutil
 import ntpath
@@ -12,6 +13,9 @@ import numpy as np
 from numpy import genfromtxt
 from datetime import datetime
 from . import earray_wrapper
+from __future__ import print_function
+import tensorflow as tf
+
 
 def moveFolderContent(indir, outdir):
     for file in os.listdir(indir):
@@ -239,7 +243,7 @@ def createVocabularyJson(list_ids, model, sessiondata, training_sessionid, json_
 # aims      :   This script creates the training matrix for a single subject (ctx_*.dat ==> SUBJ_train_data.npy [earray h5])
 #
 # input     :   subj: subject folder name
-#               in_orig_subj_path: path to the subject's cepstra with context
+#               in_orig_subj_path: path to the subject's cepstra with context (instance/users_data/APIKEY/train_data/training_sessionid/data)
 #               output_net_path: path to the output folder
 #               arr_commands: IDs of the selected commands
 #               arr_rip: range from 0 to Nripetitions
@@ -319,7 +323,7 @@ def createSubjectTrainingMatrix(subj, in_orig_subj_path, output_net_path, arr_co
 
 # -----------------------------------------------------------------------------------------------------------------------
 # DO NOT create matrices file, just read and returns the data & labels arrays
-def getSubjectTrainingMatrix(in_orig_subj_path, arr_commands, arr_rip, file_prefix='ctx'):
+def getSubjectTrainingMatrixFF(in_orig_subj_path, arr_commands, arr_rip, file_prefix='ctx'):
 
     mat_compl = []
     mat_lab = []
@@ -510,3 +514,90 @@ def getNodeBySubstring(graph, nomesubstring, allnodes=None):
         return graph.get_tensor_by_name(node_str[0] + ":0")
     else:
         return None
+
+
+# ===========================================================================================================================
+# LSTM Auxiliary functions
+# ===========================================================================================================================
+
+# ===========================================================================================================================
+# read *dat from a given folder and create corresponding TFRecords file
+# in_orig_subj_path         (instance/users_data/APIKEY/train_data/training_sessionid/data)
+def createSubjectTrainingTFRecords(in_orig_subj_path, arr_commands):
+
+    train_filenames = [name for name in glob.glob(os.path.join(in_orig_subj_path,'*.dat'))]
+
+    # Build tfrecords
+    #filelist = open('training_files_list.txt','w')
+    for index,file in enumerate(train_filenames):
+
+        #print('serializing TRAIN file {} of {}'.format(index,len(filelist)))
+        #filelist.write(file+'\t'+str(index)+'\n')
+        features = np.genfromtxt(file, dtype=float)
+
+        for key,value in arr_commands.iteritems():
+            if key in file:
+                label = float(value)
+
+        filename            = os.path.join(in_orig_subj_path, 'sequence_full_{:04d}.tfrecords'.format(index))
+        fp                  = open(filename,'w')
+        writer              = tf.python_io.TFRecordWriter(fp.name)
+        serialized_sentence = serialize_sequence(features, label)
+
+        # write to tfrecord
+        writer.write(serialized_sentence.SerializeToString())
+        writer.close()
+        fp.close()
+    #filelist.close()
+    return len(train_filenames)
+
+# accessory function for the above createSubjectTrainingTFRecords
+def serialize_sequence(audio_sequence, label):
+    # The object we return
+    ex = tf.train.SequenceExample()
+    # A non-sequential feature of our example
+    sequence_length = len(audio_sequence)
+    ex.context.feature["length"].int64_list.value.append(sequence_length)
+
+    # Feature lists for the two sequential features of our example
+    fl_audio_feat = ex.feature_lists.feature_list["audio_feat"]
+    fl_audio_labels = ex.feature_lists.feature_list["audio_labels"]
+    fl_audio_labels.feature.add().float_list.value.append(label)
+
+    for audio_feat in audio_sequence:
+        fl_audio_feat.feature.add().float_list.value.extend(audio_feat)    
+
+    return ex
+
+# ===========================================================================================================================
+# create input pipeline
+# ===========================================================================================================================
+def input_pipeline(filenames, model_data):
+
+    filename_queue = tf.train.string_input_producer(filenames, num_epochs=model_data.num_epochs, shuffle=True)
+    
+    sequence_length, audio_features, audio_labels = read_my_file_format(filename_queue,feat_dimension=model_data.nInputParams)
+
+    audio_features_batch, audio_labels_batch , seq_length_batch = tf.train.batch([audio_features, audio_labels, sequence_length],
+                                                    batch_size  = model_data.batch_size,
+                                                    num_threads = 10,
+                                                    capacity    = 100,
+                                                    dynamic_pad = True,
+                                                    enqueue_many= False)
+
+    return audio_features_batch, audio_labels_batch, seq_length_batch
+
+# Reads a single serialized SequenceExample
+def read_my_file_format(filename_queue,feat_dimension=72):
+
+    reader = tf.TFRecordReader()
+
+    key, serialized_example = reader.read(filename_queue)
+
+    context_parsed, sequence_parsed = tf.parse_single_sequence_example(serialized_example,
+                                               context_features={"length": tf.FixedLenFeature([],dtype=tf.int64)},
+                                               sequence_features={"audio_feat":tf.FixedLenSequenceFeature([feat_dimension],dtype=tf.float32),
+                                                                  "audio_labels":tf.FixedLenSequenceFeature([],dtype=tf.float32)}
+                                        )
+
+    return context_parsed['length'],sequence_parsed['audio_feat'],tf.to_int32(sequence_parsed['audio_labels'])

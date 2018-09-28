@@ -5,7 +5,13 @@
     "saInputNodeName":["inputs/I","inputs/LEN"],
     "sOutputNodeName":"model/SMO",
     "fRecognitionThreshold":0,
-    "batch_size":100,
+    "batch_size":1,
     "hm_epochs":20,
-    "ftnet_vars_name":"model"
+    "ftnet_vars_name":"model",
+    "optimizer":"adam",
+    "learning_rate":0.0001,
+    "audio_labels_dim":20,
+    "num_epochs":5000,
+    "n_hidden":100,
+	"num_layers":5
 }

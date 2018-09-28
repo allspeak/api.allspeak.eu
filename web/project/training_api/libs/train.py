@@ -14,8 +14,9 @@ import zipfile
 import json
 import random
 from numpy import genfromtxt
-from . import freeze
-from . import models
+from . import freeze 
+from . import models 
+from . import lstm_train 
 from . import utilities
 from . import context
 from project import db, app
@@ -70,8 +71,8 @@ def train_net(session_data, session_path, training_sessionid, voicebank_vocabula
             model_data = json.load(data_file)
 
         # SET/CREATE NET NAME & PATH
-        data_path = os.path.join(session_path, 'data')
-        sModelFileName = model_data['sModelFileName'] 
+        data_path       = os.path.join(session_path, 'data')
+        sModelFileName  = model_data['sModelFileName'] 
         output_net_name = "%s_%d_%d_%d" % (sModelFileName, nModelType, session_data['nProcessingScheme'], nModelClass)
         output_net_path = os.path.join(data_path, 'net')
         if os.path.exists(output_net_path) is False:
@@ -81,17 +82,26 @@ def train_net(session_data, session_path, training_sessionid, voicebank_vocabula
         ctx_frames = model_data['nContextFrames']   
         if ctx_frames > 0:
             context.createSubjectContext(data_path, ctx_frames)
-            data_matrix, label_matrix = utilities.getSubjectTrainingMatrix(data_path, commands_ids, range(0, 250), 'ctx')
-        else:
-            data_matrix, label_matrix = utilities.getSubjectTrainingMatrix(data_path, commands_ids, range(0, 250), '')
+            data_matrix, label_matrix = utilities.getSubjectTrainingMatrixFF(data_path, commands_ids, range(0, 250), 'ctx')
+            training_data_len = len(data_matrix[0])     # colonne: input layer length
 
-        training_data_len = len(data_matrix[0])     # colonne: input layer length
+        else:
+            if nModelClass == 280:
+                data_matrix, label_matrix   = utilities.getSubjectTrainingMatrixFF(data_path, commands_ids, range(0, 250), '')
+                training_data_len           = len(data_matrix[0])     # colonne: input layer length
+            else:
+                data_len                    = utilities.createSubjectTrainingTFRecords(data_path, commands_ids)
+                training_data_len           = data_len
+
         ncommands = len(commands_ids)
 
         print("start training model : " + str(nModelType))
         # START TRAINING
         if nModelType == 274:    # PU
-            trainPureUser(training_data_len, ncommands, data_matrix, label_matrix, model_data, output_net_name, session_path, clean_folder)
+            if nModelClass == 280:
+                trainPureUserFF(training_data_len, ncommands, data_matrix, label_matrix, model_data, output_net_name, session_path, clean_folder)
+            else:
+                lstm_train.trainPureUserLSTM(training_data_len, model_data, output_net_name, session_path, clean_folder)
 
         elif nModelType == 275:  # PUA (retrieve the pb file of the init PU session specified)
 
@@ -152,7 +162,7 @@ def train_net(session_data, session_path, training_sessionid, voicebank_vocabula
 
 # ===========================================================================================================================
 
-def trainPureUser(training_data_len, ncommands, train_data_matrix, train_label_matrix, model_data, output_model_name, session_path, clean_folder=True):
+def trainPureUserFF(training_data_len, ncommands, train_data_matrix, train_label_matrix, model_data, output_model_name, session_path, clean_folder=True):
 
     # temp folder to create NET files
     train_output_net_path = os.path.join(session_path, 'data', 'net')  # instance/users_data/APIKEY/train_data/training_sessionid/data/net  
