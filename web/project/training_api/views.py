@@ -242,7 +242,6 @@ def get_training_session_network(session_uid):
         attachment_filename = session_uid
         return send_file(net_path, attachment_filename=attachment_filename)
 
-
 #============================================================================================
 # DELETE TRAINING SESSION AND/OR UPLOADED FILES
 #============================================================================================
@@ -271,10 +270,6 @@ def delete_training_session(session_uid):
     print("training session : " + session_uid + " removed")
 
     return jsonify({'status': 'ok'})
-
-
-
-
 
 #============================================================================================
 # accessory

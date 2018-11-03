@@ -8,6 +8,8 @@ import numpy as np
 import re
 import glob
 import os
+import traceback
+import sys
 import time
 import shutil
 import zipfile
@@ -84,14 +86,13 @@ def train_net(session_data, session_path, training_sessionid, voicebank_vocabula
             context.createSubjectContext(data_path, ctx_frames)
             data_matrix, label_matrix = utilities.getSubjectTrainingMatrixFF(data_path, commands_ids, range(0, 250), 'ctx')
             training_data_len = len(data_matrix[0])     # colonne: input layer length
-
         else:
             if nModelClass == 280:
                 data_matrix, label_matrix   = utilities.getSubjectTrainingMatrixFF(data_path, commands_ids, range(0, 250), '')
                 training_data_len           = len(data_matrix[0])     # colonne: input layer length
             else:
-                data_len                    = utilities.createSubjectTrainingTFRecords(data_path, commands_ids)
-                training_data_len           = data_len
+                # create file for FULLTRAINING (pre-training+validation) AND REAL TRAINING (on the whole dataset, with a known numbero of epochs)
+                training_data_len, pretrain_data_len, validation_data_len = utilities.createSubjectFullTrainingTFRecords(data_path, commands_ids) 
 
         ncommands = len(commands_ids)
 
@@ -101,7 +102,7 @@ def train_net(session_data, session_path, training_sessionid, voicebank_vocabula
             if nModelClass == 280:
                 trainPureUserFF(training_data_len, ncommands, data_matrix, label_matrix, model_data, output_net_name, session_path, clean_folder)
             else:
-                lstm_train.trainPureUserLSTM(training_data_len, model_data, output_net_name, session_path, clean_folder)
+                lstm_train.trainPureUserLSTM(training_data_len, pretrain_data_len, validation_data_len, ncommands, model_data, output_net_name, session_path, clean_folder)
 
         elif nModelType == 275:  # PUA (retrieve the pb file of the init PU session specified)
 
@@ -152,6 +153,10 @@ def train_net(session_data, session_path, training_sessionid, voicebank_vocabula
         print('training completed')
 
     except Exception as e:
+
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        traceback.print_tb(exc_traceback, limit=3, file=sys.stdout)
+
         error_str = str(e)
         error_str.replace("'", "\'")
         print("Exception in train_net: " + error_str)     

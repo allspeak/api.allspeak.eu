@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 # createSubjectTrainingMatrix(subj, in_orig_subj_path, output_net_path, arr_commands, arr_rip)
 # createSubjectTestMatrix(subj, in_orig_subj_path, output_net_path, arr_commands, arr_rip, sentences_filename, sentence_counter)
 # createFullMatrix(input_matrix_folder, data_name, label_name, output_matrix_path="")
@@ -13,7 +15,6 @@ import numpy as np
 from numpy import genfromtxt
 from datetime import datetime
 from . import earray_wrapper
-from __future__ import print_function
 import tensorflow as tf
 
 
@@ -521,8 +522,9 @@ def getNodeBySubstring(graph, nomesubstring, allnodes=None):
 # ===========================================================================================================================
 
 # ===========================================================================================================================
-# read *dat from a given folder and create corresponding TFRecords file
+# read *dat from a given folder and create corresponding TFRecords files directly for training
 # in_orig_subj_path         (instance/users_data/APIKEY/train_data/training_sessionid/data)
+
 def createSubjectTrainingTFRecords(in_orig_subj_path, arr_commands):
 
     train_filenames = [name for name in glob.glob(os.path.join(in_orig_subj_path,'*.dat'))]
@@ -531,18 +533,17 @@ def createSubjectTrainingTFRecords(in_orig_subj_path, arr_commands):
     #filelist = open('training_files_list.txt','w')
     for index,file in enumerate(train_filenames):
 
-        #print('serializing TRAIN file {} of {}'.format(index,len(filelist)))
-        #filelist.write(file+'\t'+str(index)+'\n')
+        #print('serializing TRAIN file {} of {}'.format(index,len(filelist)))#filelist.write(file+'\t'+str(index)+'\n')
         features = np.genfromtxt(file, dtype=float)
 
-        for key,value in arr_commands.iteritems():
-            if key in file:
-                label = float(value)
+        for i in range(len(arr_commands)):
+            if str(arr_commands[i]) in file:
+                code = float(i)    # I write  0,1,2,3,...,nclasses-1
 
-        filename            = os.path.join(in_orig_subj_path, 'sequence_full_{:04d}.tfrecords'.format(index))
+        filename            = os.path.join(in_orig_subj_path, 'sequence_train_{:04d}.tfrecords'.format(index))
         fp                  = open(filename,'w')
         writer              = tf.python_io.TFRecordWriter(fp.name)
-        serialized_sentence = serialize_sequence(features, label)
+        serialized_sentence = serialize_sequence(features, code)
 
         # write to tfrecord
         writer.write(serialized_sentence.SerializeToString())
@@ -550,6 +551,85 @@ def createSubjectTrainingTFRecords(in_orig_subj_path, arr_commands):
         fp.close()
     #filelist.close()
     return len(train_filenames)
+
+# ===========================================================================================================================
+# read *dat from a given folder and create corresponding TFRecords files for PRE-TRAINING AND VALIDATION (aka FULL TRAINING)
+# in_orig_subj_path         (instance/users_data/APIKEY/train_data/training_sessionid/data)
+
+def createSubjectFullTrainingTFRecords(in_orig_subj_path, arr_commands, perc_valid=30):
+
+    train_filenames = [name for name in glob.glob(os.path.join(in_orig_subj_path,'*.dat'))]
+    perm_filenames  = np.random.permutation(train_filenames)
+
+    nfiles = len(train_filenames)
+    lvalid = int(nfiles*perc_valid/100)
+
+    lvalid = max(1, lvalid)
+    
+
+    valid_filenames     = perm_filenames[0:lvalid]
+    pretrain_filenames  = perm_filenames[lvalid:]
+
+    # Build tfrecords for the 3 datasets (train, pre-train, validation)
+
+    # TRAINING
+    for index,file in enumerate(train_filenames):
+
+        features = np.genfromtxt(file, dtype=float)
+
+        for i in range(len(arr_commands)):
+            if str(arr_commands[i]) in file:
+                code = float(i)    # I write  0,1,2,3,...,nclasses-1
+
+        filename            = os.path.join(in_orig_subj_path, 'sequence_train_{:04d}.tfrecords'.format(index))
+        fp                  = open(filename,'w')
+        writer              = tf.python_io.TFRecordWriter(fp.name)
+        serialized_sentence = serialize_sequence(features, code)
+
+        # write to tfrecord
+        writer.write(serialized_sentence.SerializeToString())
+        writer.close()
+        fp.close()
+
+    # PRE-TRAINING
+    for index,file in enumerate(pretrain_filenames):
+
+        features = np.genfromtxt(file, dtype=float)
+
+        for i in range(len(arr_commands)):
+            if str(arr_commands[i]) in file:
+                code = float(i)    # I write  0,1,2,3,...,nclasses-1
+
+        filename            = os.path.join(in_orig_subj_path, 'sequence_pretrain_{:04d}.tfrecords'.format(index))
+        fp                  = open(filename,'w')
+        writer              = tf.python_io.TFRecordWriter(fp.name)
+        serialized_sentence = serialize_sequence(features, code)
+
+        # write to tfrecord
+        writer.write(serialized_sentence.SerializeToString())
+        writer.close()
+        fp.close()
+
+    # VALIDATION FILES
+    for index,file in enumerate(valid_filenames):
+
+        features = np.genfromtxt(file, dtype=float)
+
+        for i in range(len(arr_commands)):
+            if str(arr_commands[i]) in file:
+                code = float(i)    # I write  0,1,2,3,...,nclasses-1
+
+        filename            = os.path.join(in_orig_subj_path, 'sequence_validation_{:04d}.tfrecords'.format(index))
+        fp                  = open(filename,'w')
+        writer              = tf.python_io.TFRecordWriter(fp.name)
+        serialized_sentence = serialize_sequence(features, code)
+
+        # write to tfrecord
+        writer.write(serialized_sentence.SerializeToString())
+        writer.close()
+        fp.close()        
+
+    return len(train_filenames), len(pretrain_filenames), len(valid_filenames)
 
 # accessory function for the above createSubjectTrainingTFRecords
 def serialize_sequence(audio_sequence, label):
@@ -570,20 +650,27 @@ def serialize_sequence(audio_sequence, label):
     return ex
 
 # ===========================================================================================================================
-# create input pipeline
+# create input pipeline (valid for both training and validation sets)
 # ===========================================================================================================================
-def input_pipeline(filenames, model_data):
+def input_pipeline(filenames, model_data, isTraining=True):
 
-    filename_queue = tf.train.string_input_producer(filenames, num_epochs=model_data.num_epochs, shuffle=True)
+    if isTraining is True:
+        doshuffle = True
+        batchsize = model_data['batch_size']
+    else:
+        doshuffle = False
+        batchsize = 1
+
+    filename_queue = tf.train.string_input_producer(filenames, num_epochs=model_data['num_epochs'], shuffle=doshuffle)
     
-    sequence_length, audio_features, audio_labels = read_my_file_format(filename_queue,feat_dimension=model_data.nInputParams)
+    sequence_length, audio_features, audio_labels = read_my_file_format(filename_queue,feat_dimension=model_data['nInputParams'])
 
     audio_features_batch, audio_labels_batch , seq_length_batch = tf.train.batch([audio_features, audio_labels, sequence_length],
-                                                    batch_size  = model_data.batch_size,
-                                                    num_threads = 10,
-                                                    capacity    = 100,
-                                                    dynamic_pad = True,
-                                                    enqueue_many= False)
+                                                                                batch_size  = batchsize,
+                                                                                num_threads = 10,
+                                                                                capacity    = 100,
+                                                                                dynamic_pad = True,
+                                                                                enqueue_many= False)
 
     return audio_features_batch, audio_labels_batch, seq_length_batch
 
@@ -600,4 +687,4 @@ def read_my_file_format(filename_queue,feat_dimension=72):
                                                                   "audio_labels":tf.FixedLenSequenceFeature([],dtype=tf.float32)}
                                         )
 
-    return context_parsed['length'],sequence_parsed['audio_feat'],tf.to_int32(sequence_parsed['audio_labels'])
+    return context_parsed['length'], sequence_parsed['audio_feat'], tf.to_int32(sequence_parsed['audio_labels'])
