@@ -27,5 +27,13 @@ services:
       POSTGRES_USER: apiallspeakeu
       POSTGRES_PASSWORD: apiallspeakeu
 
+  ngnix:
+    build: ./ngnix
+    depends_on: 
+      - web
+    ports:
+      - 443:443
+      - 80:80
+
 volumes:
   apiallspeakeupgdata:
