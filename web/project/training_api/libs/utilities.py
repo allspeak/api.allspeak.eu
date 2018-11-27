@@ -178,7 +178,7 @@ def renameSubjectFilesOld(subject_name, inrootpath, outrootpath, vocfilepath):
 
 
 def getVocabularyFromJSON(json_inputfile):
-    with open(json_inputfile) as data_file:
+    with open(json_inputfile, encoding='utf-8') as data_file:
         data = json.load(data_file)
     return data["voicebank_vocabulary"]
 
@@ -231,7 +231,7 @@ def createVocabularyJson(list_ids, model, sessiondata, training_sessionid, json_
            'commands': commands
            }
 
-    with open(json_outputfile, 'w') as data_file:
+    with open(json_outputfile, 'w', encoding='utf-8') as data_file:
         json.dump(res, data_file)
 
 
@@ -505,7 +505,7 @@ def getNodeBySubstring(graph, nomesubstring, allnodes=None):
     if allnodes is None:
         allnodes = [n.name for n in graph.as_graph_def().node ]
 
-    node_str = [s for s in allnodes if nomesubstring in s]
+    node_str = [s for s in allnodes if nomesubstring in s and 'read' not in s]
     if len(node_str) == 1:
         return graph.get_tensor_by_name(node_str[0] + ":0")
     else:

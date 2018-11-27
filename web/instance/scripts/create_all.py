@@ -18,14 +18,20 @@ from project.models import TrainingSession
 # ----------------------------------------------------------------------------------------------------------------
 # INIT DATA
 # ----------------------------------------------------------------------------------------------------------------
-admin_email = 'alberto.inuggi@gmail.com'
-admin_password = '1234'
-admin_key = 'ADMINK'
+admin_email = sys.argv[1]
+admin_password = sys.argv[2]
 
-neuro_email = 'alberto.inuggi@iit.it'
-neuro_password = '1234'
+neuro_email1 = sys.argv[3]
+neuro_password1 = sys.argv[4]
 
-n_patients = 5
+neuro_email2 = sys.argv[5]
+neuro_password2 = sys.argv[6]
+
+neuro_email3 = sys.argv[7]
+neuro_password3 = sys.argv[8]
+
+
+n_patients = 1
 
 common_net_type = 273
 preproc_type = 252
@@ -80,7 +86,7 @@ print('DB created')
 # ----------------------------------------------------------------------------------------------------------------
 # ADMIN (it also creates a folder to host the COMMON net   /.../users_data/ADMINK/train_data)
 # ----------------------------------------------------------------------------------------------------------------
-admin = User(role=User.ADMIN, email=admin_email, plaintext_password=admin_password, apikey=admin_key)
+admin = User(role=User.ADMIN, email=admin_email, plaintext_password=admin_password)
 db.session.add(admin)
 db.session.commit()
 
@@ -108,13 +114,22 @@ copyfile(os.path.join(inputnet_path, 'vocabulary.json'), os.path.join(dest_commo
 print('common training sessions created')
 
 # ----------------------------------------------------------------------------------------------------------------
-# NEUROLOGIST
+# NEUROLOGISTS
 # ----------------------------------------------------------------------------------------------------------------
-neuro = User(role=User.NEUROLOGIST, email=neuro_email, plaintext_password=neuro_password)
-db.session.add(neuro)
+neuro1 = User(role=User.NEUROLOGIST, email=neuro_email1, plaintext_password=neuro_password1)
+db.session.add(neuro1)
 db.session.commit()
+print('neurologist user created with api_key: ' + neuro1.api_key)
 
-print('neurologist user created with api_key: ' + neuro.api_key)
+neuro2 = User(role=User.NEUROLOGIST, email=neuro_email2, plaintext_password=neuro_password2)
+db.session.add(neuro2)
+db.session.commit()
+print('neurologist user created with api_key: ' + neuro2.api_key)
+
+neuro3 = User(role=User.NEUROLOGIST, email=neuro_email3, plaintext_password=neuro_password3)
+db.session.add(neuro3)
+db.session.commit()
+print('neurologist user created with api_key: ' + neuro3.api_key)
 
 # ----------------------------------------------------------------------------------------------------------------
 # PATIENTS

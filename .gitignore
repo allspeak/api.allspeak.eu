@@ -13,3 +13,4 @@ web/instance/temp_train_data/*
 ngnix/server.crt
 ngnix/server.csr
 ngnix/server.key
+web/instance/scripts/init_users.txt

@@ -18,7 +18,7 @@ from . import freeze
 from . import models
 from . import utilities
 from . import context
-from project import db
+from project import db, app
 from project.models import TrainingSession, User, Error
 
 # =========================================================================================================================
@@ -41,7 +41,7 @@ def train_net(session_data, session_path, training_sessionid, voicebank_vocabula
         commands = session_data['commands']
         commands_ids = [cmd['id'] for cmd in commands]
 
-        model_root_path = os.path.join('project', 'training_api', 'params')
+        model_root_path = os.path.join(app.instance_path, 'training_params')
         # LOAD SELECTED MODEL PARAMS
         if nModelClass == 280:
             if nModelType == 274:
@@ -66,7 +66,7 @@ def train_net(session_data, session_path, training_sessionid, voicebank_vocabula
             elif nModelType == 278:
                 trainparams_json = os.path.join(model_root_path, 'lstm_common_readapted_trainparams.json')  
 
-        with open(trainparams_json, 'r') as data_file:
+        with open(trainparams_json, 'r', encoding='utf-8') as data_file:
             model_data = json.load(data_file)
 
         # SET/CREATE NET NAME & PATH

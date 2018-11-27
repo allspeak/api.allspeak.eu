@@ -7,7 +7,7 @@ import zipfile
 import json
 import shutil
 from werkzeug import secure_filename
-from project.exceptions import RequestException
+from project.exceptions import RequestException, RequestExceptionPlus
 from .libs import context, train
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -42,6 +42,11 @@ training_api_blueprint = Blueprint('training_api', __name__)
 @training_api_blueprint.route('/api/v1/training-sessions', methods=['POST'])
 def add_training_session():
 
+    #cdir = os.getcwd()
+    #param_file1 = os.path.join('project', 'training_api', 'params', 'ff_pure_user_trainparams.json')
+    #param_file2 = os.path.join('web', 'project', 'training_api', 'params', 'ff_pure_user_trainparams.json')
+    #return jsonify({'param_file1': param_file1, 'param_file2': param_file2, 'cdir':cdir, 'res':os.path.exists(param_file)}), 201, {'Location': training_session.get_url()}
+
     if 'file' not in request.files or request.files['file'].filename == '':
         msg = 'ERROR: no file in request'
         raise RequestException(msg)
@@ -59,8 +64,14 @@ def add_training_session():
     if os.path.exists(session_path):
         msg = 'ERROR: training session %d already exist' % session_uid
         raise Exception(msg)
+
     data_path = os.path.join(session_path, 'data')
     os.makedirs(data_path)
+
+    if not os.path.exists(data_path):
+        msg = 'ERROR: training session data folder (%s) could not be created. Check your permissions' % data_path
+        raise Exception(msg)        
+
     file = request.files['file']
 
     # save zip & extract it
@@ -74,9 +85,14 @@ def add_training_session():
     # copy json to users_data/USERKEY/train_data/training_sessionid, read it
     src_json_filename = os.path.join(data_path, 'vocabulary.json')
     dest_json_filename = os.path.join(session_path, 'vocabulary.json')
+
+    if not os.path.isfile(src_json_filename):
+        msg = 'ERROR: input json file is not present.'
+        raise Exception(msg)      
+    
     os.rename(src_json_filename, dest_json_filename)
 
-    with open(dest_json_filename, 'r') as data_file:
+    with open(dest_json_filename, 'r', encoding='utf-8') as data_file:
         session_data = json.load(data_file)
 
     # get nModelType from submitted json
@@ -88,12 +104,17 @@ def add_training_session():
     else:
         user_id = None
 
-    # add present session into the db
-    training_session = TrainingSession(session_uid, nModelType, preproctype)
-    if user_id is not None:
-        training_session.user_id = user_id
-    db.session.add(training_session)
-    db.session.commit()
+    try:
+        # add present session into the db
+        training_session = TrainingSession(session_uid, nModelType, preproctype)
+        if user_id is not None:
+            training_session.user_id = user_id
+        db.session.add(training_session)
+        db.session.commit()
+
+    except Exception as e:
+        print(e)
+        raise RequestExceptionPlus(str(e), str(session_uid)) 
 
     # start training
     parallel_execution = True
@@ -139,13 +160,13 @@ def get_training_session(session_uid):
     net_file_path = training_session.net_path
     net_folder = os.path.dirname(net_file_path)
     session_json_filename = os.path.join(net_folder, 'vocabulary.json')
-    with open(session_json_filename, 'r') as data_file:
+    with open(session_json_filename, 'r', encoding='utf-8') as data_file:
         session_data = json.load(data_file)
 
     nModelType = session_data['nModelType']
     nModelClass = session_data['nModelClass']
 
-    model_root_path = os.path.join('project', 'training_api', 'params')
+    model_root_path = os.path.join(app.instance_path, 'training_params')
 
     if nModelClass == 280:
         if nModelType == 274:
@@ -170,7 +191,7 @@ def get_training_session(session_uid):
         elif nModelType == 278:
             trainparams_json = os.path.join(model_root_path, 'lstm_common_readapted_trainparams.json')  
 
-    with open(trainparams_json, 'r') as data_file:
+    with open(trainparams_json, 'r', encoding='utf-8') as data_file:
         train_data = json.load(data_file)
 
     nitems = len(session_data['commands'])
@@ -198,7 +219,7 @@ def get_training_session(session_uid):
            'commands': session_data['commands']
            }
 
-    with open(session_json_filename, 'w') as data_file:
+    with open(session_json_filename, 'w', encoding='utf-8') as data_file:
         json.dump(res, data_file)
 
     return jsonify(res)
@@ -223,15 +244,10 @@ def get_training_session_network(session_uid):
 
 
 #============================================================================================
-# DELETE TRAINING SESSION
+# DELETE TRAINING SESSION AND/OR UPLOADED FILES
 #============================================================================================
 @training_api_blueprint.route('/api/v1/training-sessions/<session_uid>/delete', methods=['GET'])
 def delete_training_session(session_uid):
-
-    training_session = TrainingSession.query.filter_by(session_uid=session_uid).first()
-
-    if not access_allowed(training_session, current_user):
-        abort(401)
 
     # get training session folder & delete it
     userkey = current_user.get_key()
@@ -239,9 +255,19 @@ def delete_training_session(session_uid):
     if os.path.isdir(session_path):
        shutil.rmtree(session_path)
 
-    # delete db entry
-    db.session.delete(training_session)
-    db.session.commit()
+    # if a corresponding training session exist => remove it 
+    # it may have in fact uploaded the session file but crashed during db interaction
+    training_session = TrainingSession.query.filter_by(session_uid=session_uid).first()
+
+    if training_session is not None:
+
+        if not access_allowed(training_session, current_user):
+            abort(401)
+
+        # delete db entry
+        db.session.delete(training_session)
+        db.session.commit()
+
     print("training session : " + session_uid + " removed")
 
     return jsonify({'status': 'ok'})
