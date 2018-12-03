@@ -10,5 +10,7 @@ web/instance/users_data/*
 !web/instance/users_data/.gitkeep
 web/instance/temp_train_data/*
 !web/instance/temp_train_data/.gitkeep
-web/instance/scripts/create_all.py
+ngnix/server.crt
+ngnix/server.csr
+ngnix/server.key
 web/instance/scripts/init_users.txt
