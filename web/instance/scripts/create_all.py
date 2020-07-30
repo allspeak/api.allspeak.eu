@@ -47,6 +47,7 @@ instance_path = os.path.join(os.curdir, 'instance')
 
 users_root = os.path.join(instance_path, 'users_data')
 mobile_app_root = os.path.join(instance_path, 'mobile_applications')
+psysuite_app_root = os.path.join(instance_path, 'psysuite_applications')
 temp_train_data_root = os.path.join(instance_path, 'temp_train_data')
 
 if recreate_filesystem is True:

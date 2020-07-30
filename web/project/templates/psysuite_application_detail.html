@@ -1,0 +1,29 @@
+{% extends "layout.html" %} {% from "_form_macros.html" import render_field %} {% block content %}
+
+<div class="user-profile">
+  <div class="page-header">
+    <h2>PsySuite Application</h2>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-6">
+      {% if mobile_application %}
+        <div class="panel panel-primary">
+          <div class="panel-heading">Details</div>
+          <div class="panel-body">
+            Version Code: {{mobile_application.version}}
+          </div>
+          <div class="panel-body">
+            Version String: {{mobile_application.sver}}
+          </div>
+          <div class="panel-body">
+            Description: {{mobile_application.description}}
+          </div>
+        </div>
+      {% else %}
+        No PsySuite Application uploaded
+      {% endif %}
+  </div>
+</div>
+
+{% endblock %}

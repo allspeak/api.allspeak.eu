@@ -294,4 +294,27 @@ class Error(db.Model):
         self.user_id = user_id
         
 
+
+class PsysuiteApplication(db.Model):
+
+    __tablename__ = "psysuite_mobile_application"
+
+    id = db.Column(db.Integer, primary_key=True)
+    version = db.Column(db.Integer, default=None, nullable=False, unique=True)
+    sver = db.Column(db.String, default=None, nullable=True)
+    description = db.Column(db.String, default=None, nullable=True)
+    apk_path = db.Column(db.String, default=None, nullable=True)
+
+    def stableupdate(self, host_url):
+        return '''
+        <update>
+            <version>%d</version>
+            <sver>%s</sver>
+            <description>%s</description>
+            <name>PsySuite</name>
+            <url>%spsysuite.apk</url>
+        </update>
+        ''' % (self.version, self.sver, self.description, host_url)
+
+
     
