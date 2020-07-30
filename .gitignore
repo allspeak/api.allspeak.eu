@@ -5,7 +5,9 @@ web/instance/flask.cfg
 /nbproject
 __pycache__/
 web/instance/mobile_applications/*
+web/instance/psysuite_applications/*
 !web/instance/mobile_applications/.gitkeep
+!web/instance/psysuite_applications/.gitkeep
 web/instance/users_data/*
 !web/instance/users_data/.gitkeep
 web/instance/temp_train_data/*
