@@ -5,7 +5,7 @@ import sys
 import os
 
 if len(sys.argv) < 3:
-    print ('Usage: create_neurologist email password')
+    print('Usage: create_neurologist email password')
     exit()
 
 email = sys.argv[1]
@@ -15,7 +15,6 @@ print('Creating neurologist %s...' % email)
 
 if os.path.abspath(os.curdir) not in sys.path:
     sys.path.append(os.path.abspath(os.curdir))
-
 
 # Create the database tables, add some initial data, and commit to the database
 from project import db
